@@ -160,7 +160,12 @@ class SqlOnlyToRunSqlMiddleware:
 
 
 def fetch_schema_sync(host, port, database, user, password):
-    """Fetch the v_bike_events schema synchronously at startup."""
+    """Fetch the v_bike_events schema synchronously at startup.
+
+    Returns a tuple of (schema_string, schema_json):
+    - schema_string: Human-readable string for LLM context
+    - schema_json: Structured dict for frontend UI
+    """
     import psycopg2
 
     schema_query = """
@@ -190,18 +195,35 @@ def fetch_schema_sync(host, port, database, user, password):
         conn.close()
 
         if not rows:
-            return "Table 'public.v_bike_events' not found or has no columns."
+            error_msg = "Table 'public.v_bike_events' not found or has no columns."
+            return error_msg, {"tables": []}
 
+        # Build string version for LLM
         schema_lines = ["Table: public.v_bike_events", "Columns:"]
+
+        # Build JSON version for frontend
+        columns = []
         for row in rows:
             col_name, data_type, nullable = row
             null_str = "" if nullable == "YES" else " (NOT NULL)"
             schema_lines.append(f"  - {col_name}: {data_type}{null_str}")
 
-        return "\n".join(schema_lines)
+            columns.append(
+                {"name": col_name, "type": data_type, "nullable": nullable == "YES"}
+            )
+
+        schema_string = "\n".join(schema_lines)
+        schema_json = {
+            "tables": [
+                {"name": "v_bike_events", "schema": "public", "columns": columns}
+            ]
+        }
+
+        return schema_string, schema_json
 
     except Exception as e:
-        return f"Could not fetch schema: {e}"
+        error_msg = f"Could not fetch schema: {e}"
+        return error_msg, {"tables": [], "error": str(e)}
 
 
 def validate_env_vars():
@@ -328,17 +350,17 @@ def create_app():
 
     # Fetch database schema at startup for context injection
     print("Fetching database schema...")
-    schema_info = fetch_schema_sync(
+    schema_string, schema_json = fetch_schema_sync(
         host=supabase_host,
         port=supabase_port,
         database=supabase_database,
         user=supabase_user,
         password=supabase_password,
     )
-    print(f"Schema loaded:\n{schema_info}")
+    print(f"Schema loaded:\n{schema_string}")
 
     # Create schema-aware system prompt builder
-    system_prompt_builder = SchemaAwareSystemPromptBuilder(schema_info=schema_info)
+    system_prompt_builder = SchemaAwareSystemPromptBuilder(schema_info=schema_string)
 
     # Initialize Restricted PostgreSQL Runner for Supabase
     postgres_runner = RestrictedPostgresRunner(
@@ -423,6 +445,9 @@ def create_app():
         version="1.0.0",
     )
 
+    # Store schema JSON in app state for access in routes
+    app.state.schema_json = schema_json
+
     component_script_tag = (
         '<script type="module" src="https://img.vanna.ai/vanna-components.js"></script>'
     )
@@ -437,7 +462,9 @@ def create_app():
     # Mount dashboard static files
     dashboard_dist = os.path.join(os.path.dirname(__file__), "dashboards")
     if os.path.exists(dashboard_dist):
-        app.mount("/dashboards", StaticFiles(directory=dashboard_dist), name="dashboards")
+        app.mount(
+            "/dashboards", StaticFiles(directory=dashboard_dist), name="dashboards"
+        )
 
     # ── Auth middleware: protect Vanna chat endpoints ──
     @app.middleware("http")
@@ -553,6 +580,7 @@ def create_app():
 
         try:
             from db import get_connection
+
             with get_connection() as conn:
                 with conn.cursor() as cur:
                     cur.execute("""
@@ -598,8 +626,8 @@ def create_app():
 
                     # Convert datetime objects to ISO strings
                     for event in events:
-                        if event.get('requested_at'):
-                            event['requested_at'] = event['requested_at'].isoformat()
+                        if event.get("requested_at"):
+                            event["requested_at"] = event["requested_at"].isoformat()
 
                     return {"data": events, "count": len(events)}
 
@@ -615,12 +643,16 @@ def create_app():
 
         try:
             from db import get_connection
+
             with get_connection() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         SELECT * FROM public.v_bike_events
                         WHERE service_request_id = %s
-                    """, (service_request_id,))
+                    """,
+                        (service_request_id,),
+                    )
 
                     columns = [desc[0] for desc in cur.description]
                     row = cur.fetchone()
@@ -629,8 +661,8 @@ def create_app():
                         raise HTTPException(status_code=404, detail="Event not found")
 
                     event = dict(zip(columns, row))
-                    if event.get('requested_at'):
-                        event['requested_at'] = event['requested_at'].isoformat()
+                    if event.get("requested_at"):
+                        event["requested_at"] = event["requested_at"].isoformat()
 
                     return event
 
@@ -789,15 +821,25 @@ def create_app():
     __COMPONENT_SCRIPT__
     <style>
         :root {
-            --bg: rgb(248, 250, 252);
-            --panel: #ffffff;
-            --rail-bg: oklch(0.984 0.003 247.858);
-            --border: oklch(0.929 0.013 255.508);
-            --text: oklch(0.145 0 0);
-            --muted: oklch(0.446 0.043 257.281);
-            --accent: oklch(0.208 0.042 265.755);
-            --card-border: oklab(0.929 -0.003 -0.012 / 0.6);
-            --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+            /* Match Vanna colors */
+            --navy: rgb(2, 61, 96);
+            --cream: rgb(231, 225, 207);
+            --teal: rgb(21, 168, 168);
+            --orange: rgb(254, 93, 38);
+            
+            /* Layout colors */
+            --bg: rgb(249, 250, 251);
+            --panel: rgb(255, 255, 255);
+            --rail-bg: rgb(252, 252, 253);
+            --border: rgb(229, 231, 235);
+            --text: rgb(15, 23, 42);
+            --muted: rgb(100, 116, 139);
+            --accent: var(--teal);
+            
+            /* Shadows matching Vanna */
+            --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.08);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -824,54 +866,64 @@ def create_app():
         }
         .rail {
             width: 64px;
-            background: var(--rail-bg);
+            background: var(--panel);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 16px 0;
-            gap: 12px;
+            gap: 8px;
         }
         .rail-spacer {
             flex: 1;
         }
         .rail-btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             border: none;
             background: transparent;
-            color: oklch(0.556 0 0);
+            color: var(--muted);
             display: grid;
             place-items: center;
             cursor: pointer;
+            transition: all 150ms ease;
         }
         .rail-btn:hover {
-            background: oklch(0.97 0 0);
-            color: oklch(0.205 0 0);
+            background: rgb(241, 245, 249);
+            color: var(--teal);
+            transform: scale(1.05);
         }
         .rail-btn.active {
-            background: oklch(0.97 0 0);
-            color: oklch(0.205 0 0);
+            background: rgba(21, 168, 168, 0.1);
+            color: var(--teal);
+            box-shadow: inset 0 0 0 1px var(--teal);
         }
         .avatar-btn {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: var(--accent);
+            background: linear-gradient(135deg, var(--navy), var(--teal));
             color: #fff;
             font-size: 14px;
             font-weight: 600;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: var(--shadow-md);
+            transition: all 150ms ease;
+        }
+        .avatar-btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
         }
 
         .sidebar {
             width: 260px;
-            background: var(--panel);
+            background: rgb(252, 252, 253);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             padding: 12px;
-            gap: 8px;
+            gap: 6px;
         }
         .sidebar.collapsed {
             width: 0;
@@ -904,18 +956,21 @@ def create_app():
             padding: 4px 2px 12px 2px;
         }
         .conv-item {
-            padding: 10px 10px 8px;
-            border-radius: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
             border: 1px solid transparent;
             cursor: pointer;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
+            transition: all 150ms ease;
         }
         .conv-item:hover {
+            background: rgb(244, 246, 248);
             border-color: var(--border);
         }
         .conv-item.active {
-            border-color: var(--accent);
-            background: oklch(0.97 0 0);
+            background: rgba(21, 168, 168, 0.08);
+            border-color: var(--teal);
+            box-shadow: var(--shadow-xs);
         }
         .conv-title {
             font-size: 13px;
@@ -944,22 +999,25 @@ def create_app():
         }
         .dashboard-card {
             padding: 12px;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1px solid var(--border);
             cursor: pointer;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 0.2s;
+            transition: all 150ms ease;
         }
         .dashboard-card:hover {
-            border-color: var(--accent);
-            background: oklch(0.97 0 0);
+            border-color: var(--teal);
+            background: rgb(252, 252, 253);
+            box-shadow: var(--shadow-sm);
+            transform: translateX(2px);
         }
         .dashboard-card.active {
-            border-color: var(--accent);
-            background: oklch(0.97 0 0);
+            background: rgba(21, 168, 168, 0.08);
+            border-color: var(--teal);
+            box-shadow: var(--shadow-sm);
         }
         .dashboard-icon {
             font-size: 24px;
@@ -1406,7 +1464,18 @@ def create_app():
     </script>
 </body>
 </html>"""
-        return html.replace("__COMPONENT_SCRIPT__", component_script_tag)
+        import json
+
+        schema_json_str = json.dumps(request.app.state.schema_json)
+        html_with_components = html.replace(
+            "__COMPONENT_SCRIPT__", component_script_tag
+        )
+        # Inject schema data as a global variable
+        schema_injection = f"""<script>
+        window.VANNA_SCHEMA = {schema_json_str};
+    </script>
+    """
+        return html_with_components.replace("</head>", schema_injection + "</head>")
 
     print("\n" + "=" * 60)
     print("Vanna AI Web Server is ready!")
