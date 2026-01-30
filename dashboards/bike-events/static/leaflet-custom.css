@@ -1,0 +1,136 @@
+/* Custom popup styling to match vintage theme */
+.leaflet-popup-content-wrapper {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  padding: 0 !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background-color: #1f2937;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  max-width: 300px;
+}
+
+.event-popup {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.event-popup h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dark .event-popup h3 {
+  color: #f9fafb;
+}
+
+.event-popup .category {
+  font-size: 1.5rem;
+}
+
+.event-popup .description {
+  font-size: 0.875rem;
+  color: #4b5563;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.dark .event-popup .description {
+  color: #9ca3af;
+}
+
+.event-popup img {
+  width: 100%;
+  height: 10rem;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.event-popup a {
+  color: #8b5a2b;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.event-popup a:hover {
+  color: #6b4423;
+}
+
+.dark .event-popup a {
+  color: #d97706;
+}
+
+/* Leaflet popup close button styling */
+.leaflet-popup-close-button {
+  color: #6b7280;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #374151;
+}
+
+.dark .leaflet-popup-close-button {
+  color: #9ca3af;
+}
+
+.dark .leaflet-popup-close-button:hover {
+  color: #e5e7eb;
+}
+
+/* Leaflet popup tip styling */
+.leaflet-popup-tip {
+  background-color: white;
+}
+
+.dark .leaflet-popup-tip {
+  background-color: #1f2937;
+}
+
+/* Tooltip styling for better appearance */
+.leaflet-tooltip {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  max-width: 320px;
+  z-index: 650 !important;
+  white-space: normal !important;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.dark .leaflet-tooltip {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+.leaflet-tooltip::before {
+  border-top-color: white;
+}
+
+.dark .leaflet-tooltip::before {
+  border-top-color: #1f2937;
+}
+
+/* Keep map container below modals */
+.leaflet-container {
+  z-index: 1 !important;
+}
+
+/* Ensure modal backdrop covers everything */
+.leaflet-pane {
+  z-index: auto !important;
+}
