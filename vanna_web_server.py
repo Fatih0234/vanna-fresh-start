@@ -374,7 +374,11 @@ def create_app():
     )
 
     # Create shared FileSystem for storing charts and data
-    file_system = LocalFileSystem(working_directory="./vanna_data")
+    data_dir = os.getenv("VANNA_DATA_DIR")
+    if not data_dir:
+        data_dir = "/tmp/vanna_data" if os.getenv("VERCEL") else "./vanna_data"
+    os.makedirs(data_dir, exist_ok=True)
+    file_system = LocalFileSystem(working_directory=data_dir)
 
     # Create SQL tool with file system
     sql_tool = RunSqlTool(sql_runner=postgres_runner, file_system=file_system)
