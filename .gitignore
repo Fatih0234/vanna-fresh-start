@@ -56,3 +56,6 @@ node_modules/
 
 # Dashboard build artifacts
 dashboards/*/dist/
+
+# Vanna generated data (query results, charts)
+vanna_data/
