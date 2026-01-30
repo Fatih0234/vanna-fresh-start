@@ -1,4 +1,0 @@
-[submodule "vanna"]
-	path = vanna
-	url = https://github.com/Fatih0234/vanna-fatih.git
-	branch = feat/grouped-bar-metric

@@ -1,4 +1,4 @@
-./vanna[fastapi,postgres,anthropic]
+./vanna[fastapi,postgres,gemini]
 python-dotenv
 pyjwt
 bcrypt
