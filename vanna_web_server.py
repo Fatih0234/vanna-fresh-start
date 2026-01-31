@@ -1134,6 +1134,11 @@ def create_app():
         <!-- Logged In App Shell -->
         <div id="logged-in" class="shell">
             <div class="rail">
+                <button class="rail-btn" id="rail-collapse" title="Close sidebar" style="display: none;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                </button>
                 <button class="rail-btn active" id="rail-new" title="New chat">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M11 5h2v14h-2zM5 11h14v2H5z"/>
@@ -1161,7 +1166,11 @@ def create_app():
             <div id="chat-sidebar" class="sidebar">
                 <div class="sidebar-header">
                     <div class="sidebar-title">Chats</div>
-                    <button class="new-chat-text" id="new-chat-text">New</button>
+                    <button class="sidebar-close-btn" id="chat-close-btn" title="Close sidebar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
                 </div>
                 <div class="conv-list" id="conv-list"></div>
             </div>
@@ -1217,6 +1226,7 @@ def create_app():
     const elUserMenu = document.getElementById('user-menu');
     const elDashboardSidebar = document.getElementById('dashboard-sidebar');
     const elChatSidebar = document.getElementById('chat-sidebar');
+    const elRailCollapse = document.getElementById('rail-collapse');
 
     function setLoggedIn() {
         elLoggedIn.style.display = 'flex';
@@ -1417,21 +1427,25 @@ def create_app():
             document.getElementById('rail-dashboards').classList.add('active');
             elDashboardSidebar.classList.remove('collapsed');
             elChatSidebar.classList.add('collapsed');
+            elRailCollapse.style.display = 'grid';
             currentView = 'dashboard';
         } else if (type === 'chats') {
             document.getElementById('rail-history').classList.add('active');
             elChatSidebar.classList.remove('collapsed');
             elDashboardSidebar.classList.add('collapsed');
+            elRailCollapse.style.display = 'grid';
             currentView = 'chat';
         } else if (type === 'new') {
             document.getElementById('rail-new').classList.add('active');
             elChatSidebar.classList.add('collapsed');
             elDashboardSidebar.classList.add('collapsed');
+            elRailCollapse.style.display = 'none';
             currentView = 'chat';
         } else if (type === 'none') {
             // Close sidebar but keep current view
             elChatSidebar.classList.add('collapsed');
             elDashboardSidebar.classList.add('collapsed');
+            elRailCollapse.style.display = 'none';
             // Keep the rail button active for the current view
             if (currentView === 'dashboard') {
                 document.getElementById('rail-dashboards').classList.add('active');
@@ -1484,10 +1498,11 @@ def create_app():
     // ── Events ──
     document.getElementById('logout-btn').addEventListener('click', doLogout);
     document.getElementById('user-avatar-btn').addEventListener('click', toggleUserMenu);
-    document.getElementById('new-chat-text').addEventListener('click', newChat);
     document.getElementById('rail-new').addEventListener('click', newChat);
     document.getElementById('rail-history').addEventListener('click', () => toggleSidebar('chats'));
     document.getElementById('rail-dashboards').addEventListener('click', () => toggleSidebar('dashboards'));
+    document.getElementById('rail-collapse').addEventListener('click', () => toggleSidebar('none'));
+    document.getElementById('chat-close-btn').addEventListener('click', () => toggleSidebar('none'));
     document.getElementById('dashboard-close-btn').addEventListener('click', () => toggleSidebar('none'));
 
     // Dashboard card click handler
