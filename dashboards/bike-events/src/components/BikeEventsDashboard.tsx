@@ -111,10 +111,10 @@ export default function BikeEventsDashboard() {
   }
 
   return (
-    <div className="-mx-4 sm:-mx-6 md:-mx-8 lg:-mx-12 xl:-mx-16">
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
+    <div className="h-full w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 h-full">
         {/* Filter Panel - Sidebar */}
-        <div className="lg:col-span-1 px-4 sm:px-6 md:px-8 lg:px-6 py-6 bg-gray-50 dark:bg-gray-900">
+        <div className="lg:col-span-1 px-6 py-6 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
           <FilterPanel
             filters={filters}
             onFilterChange={setFilters}
@@ -124,7 +124,7 @@ export default function BikeEventsDashboard() {
         </div>
 
         {/* Map and Stats - Main Area */}
-        <div className="lg:col-span-4 px-4 sm:px-6 md:px-8 lg:px-6 py-6">
+        <div className="lg:col-span-4 px-6 py-6 overflow-y-auto">
           {/* Map */}
           <div className="relative">
             <BikeEventsMap events={filteredEvents} onMarkerClick={setSelectedEvent} />
