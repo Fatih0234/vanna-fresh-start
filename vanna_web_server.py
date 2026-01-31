@@ -879,8 +879,7 @@ def create_app():
             align-items: center;
             padding: 16px 0;
             gap: 8px;
-            position: relative;
-            z-index: 15;
+            flex-shrink: 0;
         }
         .rail-spacer {
             flex: 1;
@@ -932,8 +931,8 @@ def create_app():
             flex-direction: column;
             padding: 12px;
             gap: 6px;
-            position: relative;
-            z-index: 10;
+            flex-shrink: 0;
+            transition: width 150ms ease;
         }
         .sidebar.collapsed {
             width: 0;
@@ -1243,21 +1242,6 @@ def create_app():
         elUserMenu.classList.toggle('open');
     }
 
-    function updateMainContentMargin() {
-        const wrapper = document.getElementById('chat-wrapper');
-        const main = document.querySelector('.main');
-
-        if (currentView === 'dashboard') {
-            // Dashboard view: add margin to account for rail and sidebar
-            const isSidebarOpen = !elDashboardSidebar.classList.contains('collapsed');
-            const margin = isSidebarOpen ? '344px' : '64px'; // rail (64px) + sidebar (280px) or just rail
-            main.style.marginLeft = margin;
-        } else {
-            // Chat view: no margin needed
-            main.style.marginLeft = '0';
-        }
-    }
-
     function updateUserAvatar() {
         const btn = document.getElementById('user-avatar-btn');
         const name = currentUser?.display_name || currentUser?.email || 'U';
@@ -1471,9 +1455,6 @@ def create_app():
                 document.getElementById('rail-dashboards').classList.add('active');
             }
         }
-
-        // Update main content margin based on current view and sidebar state
-        updateMainContentMargin();
     }
 
     async function loadDashboard(dashboardId) {
@@ -1488,9 +1469,6 @@ def create_app():
 
         const wrapper = document.getElementById('chat-wrapper');
         wrapper.innerHTML = '<div id="dashboard-root"></div>';
-
-        // Update main content margin to account for rail and sidebar
-        updateMainContentMargin();
 
         if (dashboardId === 'bike-events') {
             try {
