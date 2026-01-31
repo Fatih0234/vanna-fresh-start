@@ -955,6 +955,23 @@ def create_app():
             border: none;
             cursor: pointer;
         }
+        .sidebar-close-btn {
+            width: 20px;
+            height: 20px;
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 150ms ease;
+        }
+        .sidebar-close-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text);
+        }
         .conv-list {
             overflow-y: auto;
             padding: 4px 2px 12px 2px;
@@ -1032,19 +1049,28 @@ def create_app():
             justify-content: center;
             background: var(--rail-bg);
             border-radius: 8px;
+            flex-shrink: 0;
         }
         .dashboard-info {
             flex: 1;
+            min-width: 0;
+            overflow: hidden;
         }
         .dashboard-name {
             font-size: 13px;
             font-weight: 600;
             color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .dashboard-desc {
             font-size: 11px;
             color: var(--muted);
             margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .main {
@@ -1143,6 +1169,11 @@ def create_app():
             <div id="dashboard-sidebar" class="sidebar collapsed">
                 <div class="sidebar-header">
                     <div class="sidebar-title">Dashboards</div>
+                    <button class="sidebar-close-btn" id="dashboard-close-btn" title="Close sidebar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
                 </div>
                 <div class="dashboard-list" id="dashboard-list">
                     <div class="dashboard-card" data-dashboard="bike-events">
@@ -1397,6 +1428,14 @@ def create_app():
             elChatSidebar.classList.add('collapsed');
             elDashboardSidebar.classList.add('collapsed');
             currentView = 'chat';
+        } else if (type === 'none') {
+            // Close sidebar but keep current view
+            elChatSidebar.classList.add('collapsed');
+            elDashboardSidebar.classList.add('collapsed');
+            // Keep the rail button active for the current view
+            if (currentView === 'dashboard') {
+                document.getElementById('rail-dashboards').classList.add('active');
+            }
         }
     }
 
@@ -1449,6 +1488,7 @@ def create_app():
     document.getElementById('rail-new').addEventListener('click', newChat);
     document.getElementById('rail-history').addEventListener('click', () => toggleSidebar('chats'));
     document.getElementById('rail-dashboards').addEventListener('click', () => toggleSidebar('dashboards'));
+    document.getElementById('dashboard-close-btn').addEventListener('click', () => toggleSidebar('none'));
 
     // Dashboard card click handler
     document.getElementById('dashboard-list').addEventListener('click', (e) => {
