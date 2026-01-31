@@ -879,6 +879,8 @@ def create_app():
             align-items: center;
             padding: 16px 0;
             gap: 8px;
+            position: relative;
+            z-index: 15;
         }
         .rail-spacer {
             flex: 1;
@@ -930,6 +932,8 @@ def create_app():
             flex-direction: column;
             padding: 12px;
             gap: 6px;
+            position: relative;
+            z-index: 10;
         }
         .sidebar.collapsed {
             width: 0;
