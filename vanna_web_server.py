@@ -866,6 +866,8 @@ def create_app():
             pointer-events: none;
         }
         .shell.active {
+            display: flex;
+            flex-direction: row;
             pointer-events: auto;
         }
         .rail {
@@ -921,7 +923,7 @@ def create_app():
         }
 
         .sidebar {
-            width: 260px;
+            width: 280px;
             background: rgb(252, 252, 253);
             border-right: 1px solid var(--border);
             display: flex;
@@ -1229,7 +1231,6 @@ def create_app():
     const elRailCollapse = document.getElementById('rail-collapse');
 
     function setLoggedIn() {
-        elLoggedIn.style.display = 'flex';
         elLoggedIn.classList.add('active');
         updateUserAvatar();
     }
