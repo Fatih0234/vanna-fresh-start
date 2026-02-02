@@ -128,26 +128,26 @@ export default function StatsSummary({ events }: StatsSummaryProps) {
           <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600 dark:text-gray-400">Open</span>
-              <span className="font-semibold text-red-600 dark:text-red-400">
+              <span className="font-semibold text-green-600 dark:text-green-400">
                 {stats.openEvents} ({openPercentage}%)
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className="bg-red-500 h-2 rounded-full"
+                className="bg-green-500 h-2 rounded-full"
                 style={{ width: `${openPercentage}%` }}
               />
             </div>
 
             <div className="flex justify-between text-sm mt-3">
               <span className="text-gray-600 dark:text-gray-400">Closed</span>
-              <span className="font-semibold text-green-600 dark:text-green-400">
+              <span className="font-semibold text-red-600 dark:text-red-400">
                 {stats.closedEvents} ({closedPercentage}%)
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
               <div
-                className="bg-green-500 h-2 rounded-full"
+                className="bg-red-500 h-2 rounded-full"
                 style={{ width: `${closedPercentage}%` }}
               />
             </div>
