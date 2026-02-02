@@ -77,23 +77,23 @@ export class RichCard extends LitElement {
       }
 
       .card-status.status-success {
-        background: #d4edda;
-        color: #155724;
+        background: rgba(5, 150, 105, 0.15);
+        color: rgb(4, 120, 87);
       }
 
       .card-status.status-warning {
-        background: #fff3cd;
-        color: #856404;
+        background: rgba(217, 119, 6, 0.15);
+        color: rgb(180, 83, 9);
       }
 
       .card-status.status-error {
-        background: #f8d7da;
-        color: #721c24;
+        background: rgba(220, 38, 38, 0.15);
+        color: rgb(185, 28, 28);
       }
 
       .card-status.status-info {
-        background: #d1ecf1;
-        color: #0c5460;
+        background: rgba(139, 90, 43, 0.15);
+        color: rgb(105, 63, 22);
       }
 
       .card-toggle {

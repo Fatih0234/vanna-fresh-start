@@ -69,7 +69,7 @@ export class VannaProgressTracker extends LitElement {
       }
 
       .progress-item.in_progress {
-        background: rgba(0, 123, 255, 0.05);
+        background: rgba(139, 90, 43, 0.05);
         border-left: 3px solid var(--vanna-accent-primary-default);
       }
 

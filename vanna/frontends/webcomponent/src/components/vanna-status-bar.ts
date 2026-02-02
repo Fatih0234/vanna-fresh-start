@@ -9,7 +9,7 @@ export class VannaStatusBar extends LitElement {
     css`
       :host {
         display: block;
-        background: rgba(254, 93, 38, 0.06);
+        background: rgba(217, 119, 6, 0.06);
         border: 1px solid var(--vanna-orange);
         border-radius: var(--vanna-border-radius-md);
         padding: var(--vanna-space-3) var(--vanna-space-4);
@@ -93,7 +93,7 @@ export class VannaStatusBar extends LitElement {
       }
 
       :host([status="working"]) {
-        background: rgba(254, 93, 38, 0.1);
+        background: rgba(217, 119, 6, 0.1);
         border-color: var(--vanna-orange);
         color: var(--vanna-navy);
       }
@@ -105,7 +105,7 @@ export class VannaStatusBar extends LitElement {
       }
 
       :host([status="success"]) {
-        background: rgba(21, 168, 168, 0.1);
+        background: rgba(5, 150, 105, 0.1);
         border-color: var(--vanna-teal);
         color: var(--vanna-navy);
       }
@@ -173,7 +173,7 @@ export class VannaStatusBar extends LitElement {
       .spinner {
         width: 16px;
         height: 16px;
-        border: 3px solid rgba(21, 168, 168, 0.3);
+        border: 3px solid rgba(139, 90, 43, 0.3);
         border-top-color: var(--vanna-teal);
         border-radius: var(--vanna-border-radius-full);
         animation: spin 1s linear infinite, spinnerGlow 2s ease-in-out infinite;
@@ -252,10 +252,10 @@ export class VannaStatusBar extends LitElement {
 
       @keyframes spinnerGlow {
         0%, 100% {
-          filter: drop-shadow(0 0 2px rgba(21, 168, 168, 0.5));
+          filter: drop-shadow(0 0 2px rgba(139, 90, 43, 0.5));
         }
         50% {
-          filter: drop-shadow(0 0 6px rgba(21, 168, 168, 0.8));
+          filter: drop-shadow(0 0 6px rgba(139, 90, 43, 0.8));
         }
       }
 

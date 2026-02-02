@@ -368,7 +368,7 @@ export class VannaChat extends LitElement {
       }
 
       :host([theme="dark"]) .chat-messages {
-        background: radial-gradient(circle at top, rgba(99, 102, 241, 0.12), transparent 55%), var(--chat-surface);
+        background: radial-gradient(circle at top, rgba(139, 90, 43, 0.12), transparent 55%), var(--chat-surface);
       }
 
       :host([theme="dark"]) .chat-messages::-webkit-scrollbar-thumb {
@@ -453,7 +453,7 @@ export class VannaChat extends LitElement {
 
       .chat-input-container:focus-within {
         border-color: var(--chat-primary);
-        box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+        box-shadow: 0 0 0 1px rgba(139, 90, 43, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.85);
         background: rgba(255, 255, 255, 0.95);
       }
 
@@ -464,8 +464,8 @@ export class VannaChat extends LitElement {
       }
 
       :host([theme="dark"]) .chat-input-container:focus-within {
-        border-color: rgba(129, 140, 248, 0.55);
-        box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.45), inset 0 1px 0 rgba(148, 163, 184, 0.25);
+        border-color: rgba(180, 120, 60, 0.55);
+        box-shadow: 0 0 0 1px rgba(180, 120, 60, 0.45), inset 0 1px 0 rgba(148, 163, 184, 0.25);
         background: rgba(30, 41, 59, 0.88);
       }
 
@@ -521,12 +521,12 @@ export class VannaChat extends LitElement {
         justify-content: center;
         cursor: pointer;
         transition: transform var(--vanna-duration-200) ease, box-shadow var(--vanna-duration-200) ease, filter var(--vanna-duration-200) ease;
-        box-shadow: 0 18px 38px -24px rgba(79, 70, 229, 0.8);
+        box-shadow: 0 18px 38px -24px rgba(105, 63, 22, 0.8);
       }
 
       .send-button:hover {
         transform: translateY(-1px) scale(1.02);
-        box-shadow: 0 25px 45px -24px rgba(79, 70, 229, 0.85);
+        box-shadow: 0 25px 45px -24px rgba(105, 63, 22, 0.85);
       }
 
       .send-button:active {
@@ -547,7 +547,7 @@ export class VannaChat extends LitElement {
       }
 
       .sidebar {
-        background: linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, rgba(15, 23, 42, 0.02) 100%);
+        background: linear-gradient(180deg, rgba(139, 90, 43, 0.08) 0%, rgba(15, 23, 42, 0.02) 100%);
         display: flex;
         flex-direction: column;
         overflow-y: auto;
@@ -620,7 +620,7 @@ export class VannaChat extends LitElement {
       }
 
       :host([theme="dark"]) .sidebar {
-        background: linear-gradient(180deg, rgba(79, 70, 229, 0.22) 0%, rgba(15, 23, 42, 0.45) 100%);
+        background: linear-gradient(180deg, rgba(139, 90, 43, 0.22) 0%, rgba(15, 23, 42, 0.45) 100%);
       }
 
       .empty-state {
@@ -665,14 +665,14 @@ export class VannaChat extends LitElement {
         border-color: var(--vanna-accent-primary-default);
         box-shadow: 
           var(--vanna-shadow-md),
-          inset 0 1px 0 rgba(129, 140, 248, 0.2);
+          inset 0 1px 0 rgba(180, 120, 60, 0.2);
       }
 
       :host([theme="dark"]) .empty-state:hover {
         border-color: var(--vanna-accent-primary-hover);
-        box-shadow: 
+        box-shadow:
           var(--vanna-shadow-xl),
-          inset 0 1px 0 rgba(129, 140, 248, 0.3);
+          inset 0 1px 0 rgba(180, 120, 60, 0.3);
       }
 
       .empty-state-icon {
@@ -681,7 +681,7 @@ export class VannaChat extends LitElement {
         margin: 0 auto var(--vanna-space-6);
         opacity: 0.7;
         color: var(--vanna-accent-primary-default);
-        filter: drop-shadow(0 2px 4px rgba(79, 70, 229, 0.2));
+        filter: drop-shadow(0 2px 4px rgba(139, 90, 43, 0.2));
       }
 
       .empty-state-text {

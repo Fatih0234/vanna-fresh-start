@@ -74,7 +74,7 @@ export const richComponentStyles = css`
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
-    background: rgba(0, 123, 255, 0.15);
+    background: rgba(139, 90, 43, 0.15);
     color: var(--vanna-accent-primary-default);
   }
 
@@ -217,7 +217,7 @@ export const richComponentStyles = css`
 
   .task-item.status-running {
     border-color: var(--vanna-accent-primary-default);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(139, 90, 43, 0.2);
   }
 
   .task-item.status-completed {
@@ -304,7 +304,7 @@ export const richComponentStyles = css`
     border-radius: var(--vanna-border-radius-sm);
     font-size: 0.75rem;
     text-transform: uppercase;
-    background: rgba(0, 123, 255, 0.15);
+    background: rgba(139, 90, 43, 0.15);
     color: var(--vanna-accent-primary-default);
   }
 
@@ -584,7 +584,7 @@ export const richComponentStyles = css`
     border-radius: var(--vanna-border-radius-md);
     font-size: 0.85rem;
     font-weight: 500;
-    background: rgba(0, 123, 255, 0.12);
+    background: rgba(139, 90, 43, 0.12);
     color: var(--vanna-accent-primary-default);
   }
 
@@ -604,7 +604,7 @@ export const richComponentStyles = css`
   }
 
   .status-indicator-content.status-info {
-    background: rgba(0, 123, 255, 0.12);
+    background: rgba(139, 90, 43, 0.12);
     color: var(--vanna-accent-primary-default);
   }
 
@@ -617,8 +617,8 @@ export const richComponentStyles = css`
   }
 
   @keyframes statusPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.35); }
-    50% { box-shadow: 0 0 0 4px rgba(0, 123, 255, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(139, 90, 43, 0.35); }
+    50% { box-shadow: 0 0 0 4px rgba(139, 90, 43, 0); }
   }
 
   /* Text components */
@@ -788,7 +788,7 @@ export const richComponentStyles = css`
   .search-input:focus {
     outline: none;
     border-color: var(--vanna-accent-primary-default);
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    box-shadow: 0 0 0 2px rgba(139, 90, 43, 0.2);
   }
 
   .export-btn {
@@ -967,8 +967,8 @@ export const richComponentStyles = css`
   }
 
   .status-card-badge.status-running {
-    background: rgba(59, 130, 246, 0.1);
-    color: rgb(37, 99, 235);
+    background: rgba(139, 90, 43, 0.1);
+    color: rgb(139, 90, 43);
   }
 
   .status-card-badge.status-success,
