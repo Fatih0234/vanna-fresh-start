@@ -686,18 +686,21 @@ def create_app():
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vanna AI - Sign In</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: rgb(248, 250, 252);
+            --bg: #f8fafc;
             --panel: #ffffff;
-            --border: oklch(0.929 0.013 255.508);
-            --text: oklch(0.145 0 0);
-            --muted: oklch(0.446 0.043 257.281);
-            --accent: oklch(0.208 0.042 265.755);
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #2563eb;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: "Geist", "Geist Fallback", "Segoe UI", system-ui, -apple-system, sans-serif;
+            font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
@@ -710,30 +713,36 @@ def create_app():
             padding: 24px;
         }
         .login-card {
-            width: 420px;
+            width: min(460px, 92vw);
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
+            border-radius: 18px;
+            padding: 28px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
         }
         .login-card h2 {
-            font-size: 20px;
-            font-weight: 600;
+            font-size: 22px;
+            font-weight: 700;
             margin-bottom: 6px;
         }
         .login-card p {
             font-size: 14px;
             color: var(--muted);
-            margin-bottom: 16px;
+            margin-bottom: 18px;
         }
         .login-card input {
             width: 100%;
-            padding: 10px 12px;
-            border-radius: 10px;
+            padding: 12px 14px;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-size: 14px;
+            font-family: inherit;
+        }
+        .login-card input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
         .login-card .error {
             color: #e11d48;
@@ -742,10 +751,11 @@ def create_app():
             display: none;
         }
         .btn {
-            padding: 8px 16px;
-            border-radius: 10px;
+            width: 100%;
+            padding: 10px 16px;
+            border-radius: 12px;
             font-size: 14px;
-            font-weight: 500;
+            font-weight: 600;
             border: 1px solid transparent;
             background: transparent;
             color: var(--muted);
@@ -754,6 +764,10 @@ def create_app():
         .btn.primary {
             background: var(--accent);
             color: #fff;
+            box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.6);
+        }
+        .btn.primary:hover {
+            filter: brightness(0.98);
         }
     </style>
 </head>
@@ -823,32 +837,24 @@ def create_app():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vanna AI - Events Explorer</title>
     __COMPONENT_SCRIPT__
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Match Vanna colors */
-            --navy: rgb(2, 61, 96);
-            --cream: rgb(231, 225, 207);
-            --teal: rgb(21, 168, 168);
-            --orange: rgb(254, 93, 38);
-            
-            /* Layout colors */
-            --bg: rgb(249, 250, 251);
-            --panel: rgb(255, 255, 255);
-            --rail-bg: rgb(252, 252, 253);
-            --border: rgb(229, 231, 235);
-            --text: rgb(15, 23, 42);
-            --muted: rgb(100, 116, 139);
-            --accent: var(--teal);
-            
-            /* Shadows matching Vanna */
-            --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
-            --shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.08);
+            --bg: #f8fafc;
+            --panel: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --accent: #2563eb;
+            --accent-soft: rgba(37, 99, 235, 0.1);
+            --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.08);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: "Geist", "Geist Fallback", "Segoe UI", system-ui, -apple-system, sans-serif;
+            font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
@@ -856,363 +862,150 @@ def create_app():
 
         .app {
             min-height: 100vh;
-            position: relative;
         }
 
-        /* ── Logged In Layout ── */
         .shell {
             display: none;
-            height: 100vh;
-            pointer-events: none;
-        }
-        .shell.active {
-            display: flex;
-            flex-direction: row;
-            pointer-events: auto;
-        }
-        .rail {
-            width: 64px;
-            background: var(--panel);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 16px 0;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        .rail-spacer {
-            flex: 1;
-        }
-        .rail-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            border: none;
-            background: transparent;
-            color: var(--muted);
-            display: grid;
-            place-items: center;
-            cursor: pointer;
-            transition: all 150ms ease;
-        }
-        .rail-btn:hover {
-            background: rgb(241, 245, 249);
-            color: var(--teal);
-            transform: scale(1.05);
-        }
-        .rail-btn.active {
-            background: rgba(21, 168, 168, 0.1);
-            color: var(--teal);
-            box-shadow: inset 0 0 0 1px var(--teal);
-        }
-        .avatar-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--navy), var(--teal));
-            color: #fff;
-            font-size: 14px;
-            font-weight: 600;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            box-shadow: var(--shadow-md);
-            transition: all 150ms ease;
-        }
-        .avatar-btn:hover {
-            transform: scale(1.1);
-            box-shadow: var(--shadow-md);
+            min-height: 100vh;
         }
 
-        .sidebar {
-            width: 280px;
-            background: rgb(252, 252, 253);
-            border-right: 1px solid var(--border);
+        .shell.active {
             display: flex;
             flex-direction: column;
-            padding: 12px;
-            gap: 6px;
-            flex-shrink: 0;
-            transition: width 150ms ease;
         }
-        .sidebar.collapsed {
-            width: 0;
-            padding: 0;
-            border: none;
-            overflow: hidden;
-        }
-        .sidebar-header {
+
+        .topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 6px;
-        }
-        .sidebar-title {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-        .new-chat-text {
-            font-size: 12px;
-            color: var(--accent);
-            background: transparent;
-            border: none;
-            cursor: pointer;
-        }
-        .sidebar-close-btn {
-            width: 20px;
-            height: 20px;
-            border: none;
-            background: transparent;
-            color: var(--muted);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 4px;
-            transition: all 150ms ease;
-        }
-        .sidebar-close-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
-            color: var(--text);
-        }
-        .conv-list {
-            overflow-y: auto;
-            padding: 4px 2px 12px 2px;
-        }
-        .conv-item {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            cursor: pointer;
-            margin-bottom: 4px;
-            transition: all 150ms ease;
-        }
-        .conv-item:hover {
-            background: rgb(244, 246, 248);
-            border-color: var(--border);
-        }
-        .conv-item.active {
-            background: rgba(21, 168, 168, 0.08);
-            border-color: var(--teal);
-            box-shadow: var(--shadow-xs);
-        }
-        .conv-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .conv-time {
-            font-size: 12px;
-            color: var(--muted);
-            margin-top: 4px;
-        }
-        .conv-delete {
-            float: right;
-            border: none;
-            background: transparent;
-            color: var(--muted);
-            cursor: pointer;
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(8px);
         }
 
-        .dashboard-list {
-            padding: 8px;
-            overflow-y: auto;
-        }
-        .dashboard-card {
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            cursor: pointer;
-            margin-bottom: 6px;
+        .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: all 150ms ease;
         }
-        .dashboard-card:hover {
-            border-color: var(--teal);
-            background: rgb(252, 252, 253);
-            box-shadow: var(--shadow-sm);
-            transform: translateX(2px);
-        }
-        .dashboard-card.active {
-            background: rgba(21, 168, 168, 0.08);
-            border-color: var(--teal);
-            box-shadow: var(--shadow-sm);
-        }
-        .dashboard-icon {
-            font-size: 24px;
+
+        .brand-mark {
             width: 40px;
             height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            color: #fff;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-name {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .brand-subtitle {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .topbar-actions {
             display: flex;
             align-items: center;
-            justify-content: center;
-            background: var(--rail-bg);
-            border-radius: 8px;
-            flex-shrink: 0;
+            gap: 12px;
         }
-        .dashboard-info {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-        }
-        .dashboard-name {
-            font-size: 13px;
+
+        .btn {
+            border-radius: 999px;
+            padding: 10px 18px;
+            font-size: 14px;
             font-weight: 600;
+            border: 1px solid transparent;
+            background: transparent;
             color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            cursor: pointer;
         }
-        .dashboard-desc {
-            font-size: 11px;
+
+        .btn.ghost {
+            border-color: var(--border);
             color: var(--muted);
-            margin-top: 2px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            background: var(--panel);
+        }
+
+        .btn.primary {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.6);
         }
 
         .main {
             flex: 1;
-            background: var(--panel);
             display: flex;
-            flex-direction: column;
-        }
-        #chat-wrapper {
-            flex: 1;
-            display: flex;
-        }
-        .empty-chat {
-            display: flex;
-            align-items: center;
             justify-content: center;
-            height: 100%;
-            color: var(--muted);
-            font-size: 15px;
+            padding: 32px 24px 56px;
         }
+
+        .chat-wrapper {
+            width: 100%;
+            max-width: 980px;
+            display: flex;
+        }
+
         vanna-chat {
             width: 100%;
             height: 100%;
-            min-height: 500px;
+            min-height: 600px;
         }
 
-        /* ── User Menu ── */
-        .user-menu {
-            position: absolute;
-            left: 72px;
-            bottom: 16px;
-            width: 224px;
-            border: 1px solid oklch(0.922 0 0);
-            border-radius: 8px;
-            background: var(--panel);
-            padding: 4px;
-            display: none;
-            z-index: 20;
-        }
-        .user-menu.open {
-            display: block;
-        }
-        .user-menu button {
-            width: 100%;
-            height: 32px;
-            border: none;
-            background: transparent;
-            text-align: left;
-            padding: 0 10px;
-            font-size: 13px;
-            color: var(--text);
-            cursor: pointer;
-        }
-        .user-menu button:hover {
-            background: oklch(0.97 0 0);
+        @media (max-width: 720px) {
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 20px;
+            }
+
+            .topbar-actions {
+                width: 100%;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .main {
+                padding: 24px 16px 40px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Logged In App Shell -->
         <div id="logged-in" class="shell">
-            <div class="rail">
-                <button class="rail-btn" id="rail-collapse" title="Close sidebar" style="display: none;">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                    </svg>
-                </button>
-                <button class="rail-btn active" id="rail-new" title="New chat">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M11 5h2v14h-2zM5 11h14v2H5z"/>
-                    </svg>
-                </button>
-                <button class="rail-btn" id="rail-history" title="Chats">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h10v2H4z"/>
-                    </svg>
-                </button>
-                <button class="rail-btn" title="Sources">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M4 4h16v4H4zm0 6h16v10H4z"/>
-                    </svg>
-                </button>
-                <button class="rail-btn" id="rail-dashboards" title="Dashboards">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M3 3h8v8H3zm0 10h8v8H3zm10-10h8v8h-8zm0 10h8v8h-8z"/>
-                    </svg>
-                </button>
-                <div class="rail-spacer"></div>
-                <button class="rail-btn avatar-btn" id="user-avatar-btn" title="User menu">U</button>
-            </div>
-
-            <div id="chat-sidebar" class="sidebar">
-                <div class="sidebar-header">
-                    <div class="sidebar-title">Chats</div>
-                    <button class="sidebar-close-btn" id="chat-close-btn" title="Close sidebar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="conv-list" id="conv-list"></div>
-            </div>
-
-            <div id="dashboard-sidebar" class="sidebar collapsed">
-                <div class="sidebar-header">
-                    <div class="sidebar-title">Dashboards</div>
-                    <button class="sidebar-close-btn" id="dashboard-close-btn" title="Close sidebar">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                        </svg>
-                    </button>
-                </div>
-                <div class="dashboard-list" id="dashboard-list">
-                    <div class="dashboard-card" data-dashboard="bike-events">
-                        <div class="dashboard-icon">🚴</div>
-                        <div class="dashboard-info">
-                            <div class="dashboard-name">Bike Events</div>
-                            <div class="dashboard-desc">Cologne infrastructure issues</div>
-                        </div>
+            <header class="topbar">
+                <div class="brand">
+                    <div class="brand-mark">V</div>
+                    <div>
+                        <div class="brand-name">Vanna</div>
+                        <div class="brand-subtitle">Events Explorer</div>
                     </div>
                 </div>
-            </div>
+                <div class="topbar-actions">
+                    <button class="btn ghost" id="new-chat-btn">New chat</button>
+                    <button class="btn primary" id="logout-btn">Log out</button>
+                </div>
+            </header>
 
             <main class="main">
-                <div id="chat-wrapper"></div>
+                <div id="chat-wrapper" class="chat-wrapper"></div>
             </main>
         </div>
-
-        <!-- User Menu -->
-        <div id="user-menu" class="user-menu">
-            <button type="button">Help &amp; Support</button>
-            <button type="button">Roadmap</button>
-            <button type="button">Upgrade Plan</button>
-            <button type="button" id="logout-btn">Log out</button>
-        </div>
-
     </div>
 
     <script>
@@ -1221,32 +1014,11 @@ def create_app():
     }
     let currentUser = null;
     let currentConvId = null;
-    let chatPollTimer = null;
-    let sidebarCollapsed = false;
-    let currentDashboard = null;
-    let currentView = 'chat';
-    let dashboardRoot = null;
 
     const elLoggedIn = document.getElementById('logged-in');
-    const elUserMenu = document.getElementById('user-menu');
-    const elDashboardSidebar = document.getElementById('dashboard-sidebar');
-    const elChatSidebar = document.getElementById('chat-sidebar');
-    const elRailCollapse = document.getElementById('rail-collapse');
 
     function setLoggedIn() {
         elLoggedIn.classList.add('active');
-        updateUserAvatar();
-    }
-
-    function toggleUserMenu() {
-        elUserMenu.classList.toggle('open');
-    }
-
-    function updateUserAvatar() {
-        const btn = document.getElementById('user-avatar-btn');
-        const name = currentUser?.display_name || currentUser?.email || 'U';
-        const initial = name.trim().charAt(0).toUpperCase();
-        btn.textContent = initial || 'U';
     }
 
     // ── Auth ──
@@ -1268,22 +1040,16 @@ def create_app():
         setLoggedIn();
         const convs = await loadConversations();
         if (convs.length) {
-            await switchConv(convs[0].id, { skipListReload: true });
-            await loadConversations();
+            await switchConv(convs[0].id);
         } else {
-            currentConvId = null;
-            showEmptyChat();
+            await newChat();
         }
-        if (chatPollTimer) clearInterval(chatPollTimer);
-        chatPollTimer = setInterval(loadConversations, 5000);
     }
-
 
     async function doLogout() {
         await fetch('/api/auth/logout', {method: 'POST', credentials: 'include'});
         currentUser = null;
         currentConvId = null;
-        if (chatPollTimer) clearInterval(chatPollTimer);
         window.location.href = '/';
     }
 
@@ -1292,46 +1058,12 @@ def create_app():
         try {
             const r = await fetch('/api/conversations', { credentials: 'include' });
             if (!r.ok) return [];
-            const convs = await r.json();
-            renderConvList(convs);
-            return convs;
+            return await r.json();
         } catch(e) {}
         return [];
     }
 
-    function renderConvList(convs) {
-        const el = document.getElementById('conv-list');
-        if (!convs.length) {
-            el.innerHTML = '<div style="color:var(--muted);padding:8px;font-size:12px;">No conversations yet</div>';
-            el.onclick = null;
-            return;
-        }
-        el.innerHTML = convs.map(c => {
-            const active = c.id === currentConvId ? ' active' : '';
-            const title = escapeHtml(c.title || 'New Chat');
-            const time = c.updated_at ? timeAgo(c.updated_at) : '';
-            return `
-                <div class="conv-item${active}" data-id="${c.id}">
-                    <button class="conv-delete" data-id="${c.id}">×</button>
-                    <div class="conv-title">${title}</div>
-                    <div class="conv-time">${time}</div>
-                </div>`;
-        }).join('');
-        el.onclick = (e) => {
-            const deleteBtn = e.target.closest('.conv-delete');
-            if (deleteBtn) {
-                e.stopPropagation();
-                deleteConv(deleteBtn.dataset.id);
-                return;
-            }
-            const item = e.target.closest('.conv-item');
-            if (item) {
-                switchConv(item.dataset.id);
-            }
-        };
-    }
-
-    async function switchConv(convId, opts = {}) {
+    async function switchConv(convId) {
         currentConvId = convId;
         let messages = [];
         try {
@@ -1346,27 +1078,11 @@ def create_app():
         if (messages.length) {
             await populateHistory(messages);
         }
-        if (!opts.skipListReload) loadConversations();
-    }
-
-    async function deleteConv(convId) {
-        await fetch('/api/conversations/' + convId, {method: 'DELETE', credentials: 'include'});
-        const convs = await loadConversations();
-        if (currentConvId === convId) {
-            if (convs.length) {
-                await switchConv(convs[0].id, { skipListReload: true });
-                await loadConversations();
-            } else {
-                currentConvId = null;
-                showEmptyChat();
-            }
-        }
     }
 
     async function newChat() {
         currentConvId = await createConversationId();
         mountChat(currentConvId);
-        loadConversations();
     }
 
     async function createConversationId() {
@@ -1380,11 +1096,6 @@ def create_app():
         return 'conv_' + crypto.randomUUID();
     }
 
-    function showEmptyChat() {
-        const wrapper = document.getElementById('chat-wrapper');
-        wrapper.innerHTML = '<div class="empty-chat">Select a chat or start a new one</div>';
-    }
-
     // ── Mount vanna-chat ──
     function mountChat(convId) {
         const wrapper = document.getElementById('chat-wrapper');
@@ -1395,11 +1106,32 @@ def create_app():
             ' theme="light"></vanna-chat>';
         const chatEl = document.getElementById('vanna-chat');
         if (chatEl) {
+            chatEl.windowed = false;
             chatEl.allowMinimize = false;
             chatEl.showProgress = false;
             chatEl.title = 'Vanna';
             chatEl.subtitle = '';
             chatEl.placeholder = 'Ask a question...';
+            chatEl.starterPrompts = [
+                {
+                    title: 'Create a Dashboard',
+                    subtitle: 'Bike events over the last 30 days',
+                    icon: '📊',
+                    prompt: 'Create a dashboard of bike events over the last 30 days.'
+                },
+                {
+                    title: 'Create a Chart',
+                    subtitle: 'Bike issue categories',
+                    icon: '📈',
+                    prompt: 'Create a chart of bike issue categories.'
+                },
+                {
+                    title: 'Analyze Data',
+                    subtitle: 'Districts with the most bike events',
+                    icon: '📍',
+                    prompt: 'Analyze which districts have the most bike events.'
+                }
+            ];
         }
     }
 
@@ -1423,104 +1155,9 @@ def create_app():
         }, 150);
     }
 
-    function toggleSidebar(type = 'chats') {
-        // Update rail button states
-        document.querySelectorAll('.rail-btn').forEach(btn => btn.classList.remove('active'));
-
-        if (type === 'dashboards') {
-            document.getElementById('rail-dashboards').classList.add('active');
-            elDashboardSidebar.classList.remove('collapsed');
-            elChatSidebar.classList.add('collapsed');
-            elRailCollapse.style.display = 'grid';
-            currentView = 'dashboard';
-        } else if (type === 'chats') {
-            document.getElementById('rail-history').classList.add('active');
-            elChatSidebar.classList.remove('collapsed');
-            elDashboardSidebar.classList.add('collapsed');
-            elRailCollapse.style.display = 'grid';
-            currentView = 'chat';
-        } else if (type === 'new') {
-            document.getElementById('rail-new').classList.add('active');
-            elChatSidebar.classList.add('collapsed');
-            elDashboardSidebar.classList.add('collapsed');
-            elRailCollapse.style.display = 'none';
-            currentView = 'chat';
-        } else if (type === 'none') {
-            // Close sidebar but keep current view
-            elChatSidebar.classList.add('collapsed');
-            elDashboardSidebar.classList.add('collapsed');
-            elRailCollapse.style.display = 'none';
-            // Keep the rail button active for the current view
-            if (currentView === 'dashboard') {
-                document.getElementById('rail-dashboards').classList.add('active');
-            }
-        }
-    }
-
-    async function loadDashboard(dashboardId) {
-        currentView = 'dashboard';
-        currentDashboard = dashboardId;
-
-        // Unmount previous dashboard if exists
-        if (dashboardRoot) {
-            dashboardRoot.unmount();
-            dashboardRoot = null;
-        }
-
-        const wrapper = document.getElementById('chat-wrapper');
-        wrapper.innerHTML = '<div id="dashboard-root"></div>';
-
-        if (dashboardId === 'bike-events') {
-            try {
-                const module = await import('/dashboards/bike-events/dist/bike-events.js');
-                dashboardRoot = module.renderBikeEventsDashboard(document.getElementById('dashboard-root'));
-            } catch (error) {
-                console.error('Failed to load dashboard:', error);
-                wrapper.innerHTML = '<div style="padding: 20px; text-align: center;"><p style="color: red;">Failed to load dashboard. Please ensure it has been built.</p></div>';
-            }
-        }
-    }
-
-    // ── Helpers ──
-    function escapeHtml(s) {
-        const d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
-    }
-
-    function timeAgo(iso) {
-        const d = new Date(iso);
-        const now = new Date();
-        const diff = (now - d) / 1000;
-        if (diff < 60) return 'just now';
-        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-        if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-        if (diff < 604800) return Math.floor(diff/86400) + 'd ago';
-        return d.toLocaleDateString();
-    }
-
     // ── Events ──
     document.getElementById('logout-btn').addEventListener('click', doLogout);
-    document.getElementById('user-avatar-btn').addEventListener('click', toggleUserMenu);
-    document.getElementById('rail-new').addEventListener('click', newChat);
-    document.getElementById('rail-history').addEventListener('click', () => toggleSidebar('chats'));
-    document.getElementById('rail-dashboards').addEventListener('click', () => toggleSidebar('dashboards'));
-    document.getElementById('rail-collapse').addEventListener('click', () => toggleSidebar('none'));
-    document.getElementById('chat-close-btn').addEventListener('click', () => toggleSidebar('none'));
-    document.getElementById('dashboard-close-btn').addEventListener('click', () => toggleSidebar('none'));
-
-    // Dashboard card click handler
-    document.getElementById('dashboard-list').addEventListener('click', (e) => {
-        const card = e.target.closest('.dashboard-card');
-        if (!card) return;
-
-        const dashboardId = card.dataset.dashboard;
-        loadDashboard(dashboardId);
-
-        // Update active state
-        document.querySelectorAll('.dashboard-card').forEach(c => c.classList.remove('active'));
-        card.classList.add('active');
-    });
+    document.getElementById('new-chat-btn').addEventListener('click', newChat);
 
     // ── Init ──
     checkAuth();
