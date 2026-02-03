@@ -3,54 +3,54 @@ import { css } from 'lit';
 // Vanna 2.0 design tokens - Earthy brown/amber palette
 export const vannaDesignTokens = css`
   :host {
-    /* Brand Colors - Earthy palette */
-    --vanna-navy: rgb(62, 39, 18);
-    --vanna-cream: rgb(245, 240, 230);
-    --vanna-teal: rgb(139, 90, 43);
-    --vanna-orange: rgb(217, 119, 6);
-    --vanna-magenta: rgb(220, 38, 38);
+  /* Brand Colors - clean neutral palette */
+  --vanna-navy: rgb(17, 24, 39);
+  --vanna-cream: rgb(248, 250, 252);
+  --vanna-teal: rgb(37, 99, 235);
+  --vanna-orange: rgb(249, 115, 22);
+  --vanna-magenta: rgb(236, 72, 153);
 
-    /* Color Palette - Light mode (default) */
-    --vanna-background-root: rgb(255, 255, 255);
-    --vanna-background-default: rgb(249, 246, 243);
-    --vanna-background-higher: rgb(245, 241, 236);
-    --vanna-background-highest: rgb(239, 234, 227);
-    --vanna-background-subtle: rgb(253, 251, 249);
-    --vanna-background-lower: rgb(247, 244, 240);
-    --vanna-background-cream-accent: rgb(245, 240, 230);
+  /* Color Palette - Light mode (default) */
+  --vanna-background-root: rgb(255, 255, 255);
+  --vanna-background-default: rgb(248, 250, 252);
+  --vanna-background-higher: rgb(241, 245, 249);
+  --vanna-background-highest: rgb(226, 232, 240);
+  --vanna-background-subtle: rgb(255, 255, 255);
+  --vanna-background-lower: rgb(244, 247, 251);
+  --vanna-background-cream-accent: rgb(248, 250, 252);
 
-    --vanna-foreground-default: rgb(62, 39, 18);
-    --vanna-foreground-dimmer: rgb(87, 75, 62);
-    --vanna-foreground-dimmest: rgb(120, 107, 92);
+  --vanna-foreground-default: rgb(15, 23, 42);
+  --vanna-foreground-dimmer: rgb(71, 85, 105);
+  --vanna-foreground-dimmest: rgb(100, 116, 139);
 
-    --vanna-accent-primary-default: rgb(139, 90, 43);
-    --vanna-accent-primary-stronger: rgb(105, 63, 22);
-    --vanna-accent-primary-strongest: rgb(62, 39, 18);
-    --vanna-accent-primary-subtle: rgba(139, 90, 43, 0.1);
-    --vanna-accent-primary-hover: rgb(160, 104, 50);
+  --vanna-accent-primary-default: rgb(37, 99, 235);
+  --vanna-accent-primary-stronger: rgb(29, 78, 216);
+  --vanna-accent-primary-strongest: rgb(30, 64, 175);
+  --vanna-accent-primary-subtle: rgba(37, 99, 235, 0.12);
+  --vanna-accent-primary-hover: rgb(59, 130, 246);
 
-    --vanna-accent-positive-default: rgb(5, 150, 105);
-    --vanna-accent-positive-stronger: rgb(4, 120, 87);
-    --vanna-accent-positive-subtle: rgba(5, 150, 105, 0.1);
+  --vanna-accent-positive-default: rgb(16, 185, 129);
+  --vanna-accent-positive-stronger: rgb(5, 150, 105);
+  --vanna-accent-positive-subtle: rgba(16, 185, 129, 0.12);
 
-    --vanna-accent-negative-default: rgb(220, 38, 38);
-    --vanna-accent-negative-stronger: rgb(185, 28, 28);
-    --vanna-accent-negative-subtle: rgba(220, 38, 38, 0.1);
+  --vanna-accent-negative-default: rgb(239, 68, 68);
+  --vanna-accent-negative-stronger: rgb(220, 38, 38);
+  --vanna-accent-negative-subtle: rgba(239, 68, 68, 0.12);
 
-    --vanna-accent-warning-default: rgb(217, 119, 6);
-    --vanna-accent-warning-stronger: rgb(180, 83, 9);
-    --vanna-accent-warning-subtle: rgba(217, 119, 6, 0.1);
+  --vanna-accent-warning-default: rgb(245, 158, 11);
+  --vanna-accent-warning-stronger: rgb(217, 119, 6);
+  --vanna-accent-warning-subtle: rgba(245, 158, 11, 0.12);
 
-    /* Outline/Border colors */
-    --vanna-outline-default: rgba(139, 90, 43, 0.25);
-    --vanna-outline-dimmer: rgb(236, 229, 220);
-    --vanna-outline-dimmest: rgb(245, 240, 233);
-    --vanna-outline-hover: rgb(139, 90, 43);
+  /* Outline/Border colors */
+  --vanna-outline-default: rgba(148, 163, 184, 0.6);
+  --vanna-outline-dimmer: rgb(226, 232, 240);
+  --vanna-outline-dimmest: rgb(241, 245, 249);
+  --vanna-outline-hover: rgb(59, 130, 246);
 
-    /* Typography */
-    --vanna-font-family-default: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-    --vanna-font-family-serif: "Roboto Slab", ui-serif, Georgia, serif;
-    --vanna-font-family-mono: "Space Mono", ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Ubuntu Mono", monospace;
+  /* Typography */
+  --vanna-font-family-default: "Manrope", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --vanna-font-family-serif: "Roboto Slab", ui-serif, Georgia, serif;
+  --vanna-font-family-mono: "Space Mono", ui-monospace, SFMono-Regular, "SF Mono", Monaco, Inconsolata, "Roboto Mono", "Ubuntu Mono", monospace;
 
     /* Spacing scale */
     --vanna-space-0: 0px;
@@ -77,13 +77,13 @@ export const vannaDesignTokens = css`
     --vanna-border-radius-2xl: 16px;
     --vanna-border-radius-full: 9999px;
 
-    /* Shadows - Preline-inspired */
-    --vanna-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-    --vanna-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
-    --vanna-shadow-md: 0 4px 8px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-    --vanna-shadow-lg: 0 10px 20px -5px rgba(0, 0, 0, 0.10), 0 4px 8px -4px rgba(0, 0, 0, 0.08);
-    --vanna-shadow-xl: 0 20px 30px -8px rgba(0, 0, 0, 0.12), 0 8px 12px -6px rgba(0, 0, 0, 0.08);
-    --vanna-shadow-2xl: 0 25px 40px -10px rgba(0, 0, 0, 0.15);
+  /* Shadows - subtle and clean */
+  --vanna-shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  --vanna-shadow-sm: 0 2px 4px 0 rgba(15, 23, 42, 0.08);
+  --vanna-shadow-md: 0 6px 12px -4px rgba(15, 23, 42, 0.12);
+  --vanna-shadow-lg: 0 12px 24px -10px rgba(15, 23, 42, 0.16);
+  --vanna-shadow-xl: 0 20px 32px -14px rgba(15, 23, 42, 0.18);
+  --vanna-shadow-2xl: 0 30px 50px -20px rgba(15, 23, 42, 0.25);
 
     /* Animation durations */
     --vanna-duration-75: 75ms;
@@ -111,39 +111,39 @@ export const vannaDesignTokens = css`
 
   /* Dark theme overrides */
   :host([theme="dark"]) {
-    --vanna-background-root: rgb(15, 12, 9);
-    --vanna-background-default: rgb(22, 18, 14);
-    --vanna-background-higher: rgb(32, 26, 20);
-    --vanna-background-highest: rgb(42, 35, 27);
-    --vanna-background-subtle: rgb(24, 19, 14);
-    --vanna-background-lower: rgb(10, 8, 6);
+    --vanna-background-root: rgb(15, 23, 42);
+    --vanna-background-default: rgb(17, 24, 39);
+    --vanna-background-higher: rgb(30, 41, 59);
+    --vanna-background-highest: rgb(51, 65, 85);
+    --vanna-background-subtle: rgb(15, 23, 42);
+    --vanna-background-lower: rgb(12, 18, 32);
 
-    --vanna-foreground-default: rgb(248, 244, 238);
-    --vanna-foreground-dimmer: rgb(210, 200, 185);
-    --vanna-foreground-dimmest: rgb(160, 147, 130);
+    --vanna-foreground-default: rgb(241, 245, 249);
+    --vanna-foreground-dimmer: rgb(203, 213, 225);
+    --vanna-foreground-dimmest: rgb(148, 163, 184);
 
-    --vanna-accent-primary-default: rgb(180, 120, 60);
-    --vanna-accent-primary-stronger: rgb(200, 140, 75);
-    --vanna-accent-primary-strongest: rgb(139, 90, 43);
-    --vanna-accent-primary-subtle: rgba(180, 120, 60, 0.15);
-    --vanna-accent-primary-hover: rgb(200, 140, 75);
+    --vanna-accent-primary-default: rgb(96, 165, 250);
+    --vanna-accent-primary-stronger: rgb(59, 130, 246);
+    --vanna-accent-primary-strongest: rgb(37, 99, 235);
+    --vanna-accent-primary-subtle: rgba(59, 130, 246, 0.2);
+    --vanna-accent-primary-hover: rgb(147, 197, 253);
 
     --vanna-accent-positive-default: rgb(16, 185, 129);
     --vanna-accent-positive-stronger: rgb(5, 150, 105);
-    --vanna-accent-positive-subtle: rgba(16, 185, 129, 0.15);
+    --vanna-accent-positive-subtle: rgba(16, 185, 129, 0.18);
 
     --vanna-accent-negative-default: rgb(248, 113, 113);
     --vanna-accent-negative-stronger: rgb(239, 68, 68);
-    --vanna-accent-negative-subtle: rgba(248, 113, 113, 0.15);
+    --vanna-accent-negative-subtle: rgba(248, 113, 113, 0.18);
 
     --vanna-accent-warning-default: rgb(245, 158, 11);
     --vanna-accent-warning-stronger: rgb(217, 119, 6);
-    --vanna-accent-warning-subtle: rgba(245, 158, 11, 0.15);
+    --vanna-accent-warning-subtle: rgba(245, 158, 11, 0.18);
 
-    --vanna-outline-default: rgba(180, 120, 60, 0.3);
-    --vanna-outline-dimmer: rgb(45, 38, 30);
-    --vanna-outline-dimmest: rgb(28, 22, 16);
-    --vanna-outline-hover: rgb(180, 120, 60);
+    --vanna-outline-default: rgba(148, 163, 184, 0.4);
+    --vanna-outline-dimmer: rgb(51, 65, 85);
+    --vanna-outline-dimmest: rgb(30, 41, 59);
+    --vanna-outline-hover: rgb(147, 197, 253);
 
     --vanna-shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.6);
     --vanna-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.5), 0 1px 2px -1px rgba(0, 0, 0, 0.5);
