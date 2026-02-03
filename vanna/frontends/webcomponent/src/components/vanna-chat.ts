@@ -490,7 +490,7 @@ export class VannaChat extends LitElement {
         align-items: center;
         gap: var(--vanna-space-2);
         padding: 6px 8px 6px 18px;
-        border-radius: 999px;
+        border-radius: 18px;
         background: var(--chat-muted);
         border: 1px solid var(--chat-muted-stronger);
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
@@ -559,7 +559,7 @@ export class VannaChat extends LitElement {
       .send-button {
         width: 48px;
         height: 48px;
-        border-radius: 999px;
+        border-radius: 18px;
         border: none;
         background: linear-gradient(135deg, var(--chat-primary-stronger), var(--chat-primary));
         color: var(--chat-primary-foreground);
