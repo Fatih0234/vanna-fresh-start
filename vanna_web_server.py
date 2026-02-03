@@ -871,54 +871,8 @@ def create_app():
 
         .shell.active {
             display: flex;
-            flex-direction: column;
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 24px 32px;
-            border-bottom: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.95);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            backdrop-filter: blur(8px);
-        }
-
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .brand-mark {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb, #1e40af);
-            color: #fff;
-            font-weight: 700;
-            display: grid;
-            place-items: center;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .brand-name {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .brand-subtitle {
-            font-size: 12px;
-            color: var(--muted);
-        }
-
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            flex-direction: row;
+            min-height: 100vh;
         }
 
         .btn {
@@ -944,34 +898,47 @@ def create_app():
             box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.6);
         }
 
-        .main {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            padding: 32px 24px 56px;
-        }
-
-        .layout {
-            width: 100%;
-            max-width: 1200px;
-            display: grid;
-            grid-template-columns: 280px minmax(0, 1fr);
-            gap: 24px;
-            align-items: start;
-        }
-
         .sidebar {
+            width: 280px;
             background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: var(--shadow-sm);
+            border-right: 1px solid var(--border);
+            padding: 20px 16px;
             display: flex;
             flex-direction: column;
             gap: 12px;
-            height: calc(100vh - 160px);
+            height: 100vh;
             position: sticky;
-            top: 96px;
+            top: 0;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 4px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            color: #fff;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .brand-name {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .brand-subtitle {
+            font-size: 12px;
+            color: var(--muted);
         }
 
         .sidebar-title {
@@ -1120,8 +1087,24 @@ def create_app():
             color: var(--muted);
         }
 
+        .sidebar-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 32px 32px 56px;
+        }
+
         .chat-wrapper {
             width: 100%;
+            max-width: 980px;
             display: flex;
         }
 
@@ -1131,28 +1114,17 @@ def create_app():
             min-height: 600px;
         }
 
-        @media (max-width: 960px) {
-            .layout {
-                grid-template-columns: 1fr;
+        @media (max-width: 720px) {
+            .shell.active {
+                flex-direction: column;
             }
 
             .sidebar {
-                position: relative;
-                height: auto;
-                top: auto;
-            }
-        }
-
-        @media (max-width: 720px) {
-            .topbar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-                padding: 20px;
-            }
-
-            .topbar-actions {
                 width: 100%;
+                height: auto;
+                position: relative;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
             }
 
             .btn {
@@ -1168,44 +1140,39 @@ def create_app():
 <body>
     <div class="app">
         <div id="logged-in" class="shell">
-            <header class="topbar">
-                <div class="brand">
+            <aside class="sidebar">
+                <div class="sidebar-brand">
                     <div class="brand-mark">V</div>
                     <div>
                         <div class="brand-name">Vanna</div>
                         <div class="brand-subtitle">Events Explorer</div>
                     </div>
                 </div>
-                <div class="topbar-actions">
-                    <button class="btn ghost" id="new-chat-btn">New chat</button>
+                <div class="sidebar-title">Workspace</div>
+                <div class="sidebar-actions">
+                    <button class="btn ghost" id="sidebar-new-chat">New chat</button>
+                </div>
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab active" id="tab-chats" type="button">Chats</button>
+                    <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
+                </div>
+                <div class="sidebar-list" id="conv-list"></div>
+                <div class="sidebar-list" id="dashboard-list" style="display: none;">
+                    <div class="dashboard-card" data-dashboard="bike-events">
+                        <div class="dashboard-icon">🚴</div>
+                        <div class="dashboard-info">
+                            <div class="dashboard-name">Bike Events</div>
+                            <div class="dashboard-desc">Cologne infrastructure issues</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar-footer">
                     <button class="btn primary" id="logout-btn">Log out</button>
                 </div>
-            </header>
+            </aside>
 
             <main class="main">
-                <div class="layout">
-                    <aside class="sidebar">
-                        <div class="sidebar-title">Workspace</div>
-                        <div class="sidebar-actions">
-                            <button class="btn ghost" id="sidebar-new-chat">New chat</button>
-                        </div>
-                        <div class="sidebar-tabs">
-                            <button class="sidebar-tab active" id="tab-chats" type="button">Chats</button>
-                            <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
-                        </div>
-                        <div class="sidebar-list" id="conv-list"></div>
-                        <div class="sidebar-list" id="dashboard-list" style="display: none;">
-                            <div class="dashboard-card" data-dashboard="bike-events">
-                                <div class="dashboard-icon">🚴</div>
-                                <div class="dashboard-info">
-                                    <div class="dashboard-name">Bike Events</div>
-                                    <div class="dashboard-desc">Cologne infrastructure issues</div>
-                                </div>
-                            </div>
-                        </div>
-                    </aside>
-                    <div id="chat-wrapper" class="chat-wrapper"></div>
-                </div>
+                <div id="chat-wrapper" class="chat-wrapper"></div>
             </main>
         </div>
     </div>
@@ -1483,7 +1450,6 @@ def create_app():
 
     // ── Events ──
     document.getElementById('logout-btn').addEventListener('click', doLogout);
-    document.getElementById('new-chat-btn').addEventListener('click', newChat);
     document.getElementById('sidebar-new-chat').addEventListener('click', newChat);
     elTabChats.addEventListener('click', () => setTab('chats'));
     elTabDashboards.addEventListener('click', () => setTab('dashboards'));
