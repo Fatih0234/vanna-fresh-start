@@ -951,9 +951,177 @@ def create_app():
             padding: 32px 24px 56px;
         }
 
+        .layout {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 24px;
+            align-items: start;
+        }
+
+        .sidebar {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: calc(100vh - 160px);
+            position: sticky;
+            top: 96px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .sidebar-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            gap: 6px;
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .sidebar-tab {
+            flex: 1;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 10px;
+            background: transparent;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+        }
+
+        .sidebar-tab.active {
+            background: var(--panel);
+            color: var(--text);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sidebar-list {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-right: 4px;
+        }
+
+        .conv-item {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .conv-item:hover {
+            background: var(--bg);
+            border-color: var(--border);
+        }
+
+        .conv-item.active {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+        }
+
+        .conv-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .conv-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .conv-time {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .conv-delete {
+            border: none;
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .dashboard-card {
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+        }
+
+        .dashboard-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+        }
+
+        .dashboard-card.active {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .dashboard-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: var(--bg);
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+        }
+
+        .dashboard-info {
+            min-width: 0;
+        }
+
+        .dashboard-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .dashboard-desc {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
         .chat-wrapper {
             width: 100%;
-            max-width: 980px;
             display: flex;
         }
 
@@ -961,6 +1129,18 @@ def create_app():
             width: 100%;
             height: 100%;
             min-height: 600px;
+        }
+
+        @media (max-width: 960px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: relative;
+                height: auto;
+                top: auto;
+            }
         }
 
         @media (max-width: 720px) {
@@ -1003,7 +1183,29 @@ def create_app():
             </header>
 
             <main class="main">
-                <div id="chat-wrapper" class="chat-wrapper"></div>
+                <div class="layout">
+                    <aside class="sidebar">
+                        <div class="sidebar-title">Workspace</div>
+                        <div class="sidebar-actions">
+                            <button class="btn ghost" id="sidebar-new-chat">New chat</button>
+                        </div>
+                        <div class="sidebar-tabs">
+                            <button class="sidebar-tab active" id="tab-chats" type="button">Chats</button>
+                            <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
+                        </div>
+                        <div class="sidebar-list" id="conv-list"></div>
+                        <div class="sidebar-list" id="dashboard-list" style="display: none;">
+                            <div class="dashboard-card" data-dashboard="bike-events">
+                                <div class="dashboard-icon">🚴</div>
+                                <div class="dashboard-info">
+                                    <div class="dashboard-name">Bike Events</div>
+                                    <div class="dashboard-desc">Cologne infrastructure issues</div>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+                    <div id="chat-wrapper" class="chat-wrapper"></div>
+                </div>
             </main>
         </div>
     </div>
@@ -1014,11 +1216,32 @@ def create_app():
     }
     let currentUser = null;
     let currentConvId = null;
+    let chatPollTimer = null;
+    let currentView = 'chat';
+    let dashboardRoot = null;
 
     const elLoggedIn = document.getElementById('logged-in');
+    const elConvList = document.getElementById('conv-list');
+    const elDashboardList = document.getElementById('dashboard-list');
+    const elTabChats = document.getElementById('tab-chats');
+    const elTabDashboards = document.getElementById('tab-dashboards');
 
     function setLoggedIn() {
         elLoggedIn.classList.add('active');
+    }
+
+    function setTab(tab) {
+        if (tab === 'dashboards') {
+            elTabDashboards.classList.add('active');
+            elTabChats.classList.remove('active');
+            elDashboardList.style.display = 'flex';
+            elConvList.style.display = 'none';
+        } else {
+            elTabChats.classList.add('active');
+            elTabDashboards.classList.remove('active');
+            elConvList.style.display = 'flex';
+            elDashboardList.style.display = 'none';
+        }
     }
 
     // ── Auth ──
@@ -1038,18 +1261,23 @@ def create_app():
 
     async function showChatView() {
         setLoggedIn();
+        setTab('chats');
         const convs = await loadConversations();
         if (convs.length) {
-            await switchConv(convs[0].id);
+            await switchConv(convs[0].id, { skipListReload: true });
+            await loadConversations();
         } else {
             await newChat();
         }
+        if (chatPollTimer) clearInterval(chatPollTimer);
+        chatPollTimer = setInterval(loadConversations, 5000);
     }
 
     async function doLogout() {
         await fetch('/api/auth/logout', {method: 'POST', credentials: 'include'});
         currentUser = null;
         currentConvId = null;
+        if (chatPollTimer) clearInterval(chatPollTimer);
         window.location.href = '/';
     }
 
@@ -1058,13 +1286,50 @@ def create_app():
         try {
             const r = await fetch('/api/conversations', { credentials: 'include' });
             if (!r.ok) return [];
-            return await r.json();
+            const convs = await r.json();
+            renderConvList(convs);
+            return convs;
         } catch(e) {}
         return [];
     }
 
-    async function switchConv(convId) {
+    function renderConvList(convs) {
+        if (!elConvList) return;
+        if (!convs.length) {
+            elConvList.innerHTML = '<div style="color:var(--muted);padding:8px;font-size:12px;">No conversations yet</div>';
+            elConvList.onclick = null;
+            return;
+        }
+        elConvList.innerHTML = convs.map(c => {
+            const active = c.id === currentConvId ? ' active' : '';
+            const title = escapeHtml(c.title || 'New Chat');
+            const time = c.updated_at ? timeAgo(c.updated_at) : '';
+            return `
+                <div class="conv-item${active}" data-id="${c.id}">
+                    <div class="conv-row">
+                        <div class="conv-title">${title}</div>
+                        <button class="conv-delete" data-id="${c.id}" title="Delete">×</button>
+                    </div>
+                    <div class="conv-time">${time}</div>
+                </div>`;
+        }).join('');
+        elConvList.onclick = (e) => {
+            const deleteBtn = e.target.closest('.conv-delete');
+            if (deleteBtn) {
+                e.stopPropagation();
+                deleteConv(deleteBtn.dataset.id);
+                return;
+            }
+            const item = e.target.closest('.conv-item');
+            if (item) {
+                switchConv(item.dataset.id);
+            }
+        };
+    }
+
+    async function switchConv(convId, opts = {}) {
         currentConvId = convId;
+        currentView = 'chat';
         let messages = [];
         try {
             const r = await fetch('/api/conversations/' + convId, { credentials: 'include' });
@@ -1078,11 +1343,14 @@ def create_app():
         if (messages.length) {
             await populateHistory(messages);
         }
+        if (!opts.skipListReload) loadConversations();
     }
 
     async function newChat() {
         currentConvId = await createConversationId();
+        setTab('chats');
         mountChat(currentConvId);
+        loadConversations();
     }
 
     async function createConversationId() {
@@ -1096,9 +1364,27 @@ def create_app():
         return 'conv_' + crypto.randomUUID();
     }
 
+    async function deleteConv(convId) {
+        await fetch('/api/conversations/' + convId, {method: 'DELETE', credentials: 'include'});
+        const convs = await loadConversations();
+        if (currentConvId === convId) {
+            if (convs.length) {
+                await switchConv(convs[0].id, { skipListReload: true });
+                await loadConversations();
+            } else {
+                await newChat();
+            }
+        }
+    }
+
     // ── Mount vanna-chat ──
     function mountChat(convId) {
         const wrapper = document.getElementById('chat-wrapper');
+        if (dashboardRoot) {
+            dashboardRoot.unmount();
+            dashboardRoot = null;
+        }
+        setTab('chats');
         wrapper.innerHTML =
             '<vanna-chat id="vanna-chat"' +
             ' sse-endpoint="/api/vanna/v2/chat_sse"' +
@@ -1155,9 +1441,60 @@ def create_app():
         }, 150);
     }
 
+    async function loadDashboard(dashboardId) {
+        currentView = 'dashboard';
+        setTab('dashboards');
+
+        if (dashboardRoot) {
+            dashboardRoot.unmount();
+            dashboardRoot = null;
+        }
+
+        const wrapper = document.getElementById('chat-wrapper');
+        wrapper.innerHTML = '<div id="dashboard-root"></div>';
+
+        if (dashboardId === 'bike-events') {
+            try {
+                const module = await import('/dashboards/bike-events/dist/bike-events.js');
+                dashboardRoot = module.renderBikeEventsDashboard(document.getElementById('dashboard-root'));
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+                wrapper.innerHTML = '<div style="padding: 20px; text-align: center;"><p style="color: red;">Failed to load dashboard. Please ensure it has been built.</p></div>';
+            }
+        }
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    function timeAgo(iso) {
+        const d = new Date(iso);
+        const now = new Date();
+        const diff = (now - d) / 1000;
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff/86400) + 'd ago';
+        return d.toLocaleDateString();
+    }
+
     // ── Events ──
     document.getElementById('logout-btn').addEventListener('click', doLogout);
     document.getElementById('new-chat-btn').addEventListener('click', newChat);
+    document.getElementById('sidebar-new-chat').addEventListener('click', newChat);
+    elTabChats.addEventListener('click', () => setTab('chats'));
+    elTabDashboards.addEventListener('click', () => setTab('dashboards'));
+    elDashboardList.addEventListener('click', (e) => {
+        const card = e.target.closest('.dashboard-card');
+        if (!card) return;
+        const dashboardId = card.dataset.dashboard;
+        loadDashboard(dashboardId);
+        document.querySelectorAll('.dashboard-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+    });
 
     // ── Init ──
     checkAuth();
