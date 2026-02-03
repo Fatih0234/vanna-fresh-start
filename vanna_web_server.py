@@ -1100,12 +1100,19 @@ def create_app():
             display: flex;
             justify-content: center;
             padding: 32px 32px 56px;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main.dashboard-mode {
+            overflow: auto;
         }
 
         .chat-wrapper {
             width: 100%;
             max-width: 980px;
             display: flex;
+            height: 100%;
         }
 
         vanna-chat {
@@ -1171,7 +1178,7 @@ def create_app():
                 </div>
             </aside>
 
-            <main class="main">
+            <main class="main" id="main">
                 <div id="chat-wrapper" class="chat-wrapper"></div>
             </main>
         </div>
@@ -1188,6 +1195,7 @@ def create_app():
     let dashboardRoot = null;
 
     const elLoggedIn = document.getElementById('logged-in');
+    const elMain = document.getElementById('main');
     const elConvList = document.getElementById('conv-list');
     const elDashboardList = document.getElementById('dashboard-list');
     const elTabChats = document.getElementById('tab-chats');
@@ -1352,6 +1360,9 @@ def create_app():
             dashboardRoot = null;
         }
         setTab('chats');
+        if (elMain) {
+            elMain.classList.remove('dashboard-mode');
+        }
         wrapper.innerHTML =
             '<vanna-chat id="vanna-chat"' +
             ' sse-endpoint="/api/vanna/v2/chat_sse"' +
@@ -1411,6 +1422,9 @@ def create_app():
     async function loadDashboard(dashboardId) {
         currentView = 'dashboard';
         setTab('dashboards');
+        if (elMain) {
+            elMain.classList.add('dashboard-mode');
+        }
 
         if (dashboardRoot) {
             dashboardRoot.unmount();
