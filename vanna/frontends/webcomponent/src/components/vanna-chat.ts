@@ -525,9 +525,10 @@ export class VannaChat extends LitElement {
         color: var(--vanna-foreground-default);
         resize: none;
         min-height: 48px;
-        max-height: 140px;
+        max-height: var(--vanna-input-max-height, 180px);
         padding: 12px 0;
         outline: none;
+        overflow-y: hidden;
       }
 
       :host([theme="dark"]) .message-input {
@@ -1025,8 +1026,19 @@ export class VannaChat extends LitElement {
   }
 
   private handleInput(e: Event) {
-    const input = e.target as HTMLInputElement;
+    const input = e.target as HTMLTextAreaElement;
     this.currentMessage = input.value;
+    this.resizeTextarea(input);
+  }
+
+  private resizeTextarea(input: HTMLTextAreaElement) {
+    const computed = window.getComputedStyle(input);
+    const maxHeightValue = computed.getPropertyValue('--vanna-input-max-height').trim();
+    const maxHeight = maxHeightValue ? parseInt(maxHeightValue, 10) : 180;
+    input.style.height = 'auto';
+    const nextHeight = Math.min(input.scrollHeight, maxHeight);
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = input.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }
 
   private handleKeyPress(e: KeyboardEvent) {
@@ -1438,6 +1450,7 @@ export class VannaChat extends LitElement {
     inputs.forEach((input) => {
       input.value = '';
       input.style.height = 'auto';
+      input.style.overflowY = 'hidden';
     });
   }
 
