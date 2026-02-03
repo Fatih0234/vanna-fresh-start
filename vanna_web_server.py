@@ -1115,6 +1115,19 @@ def create_app():
             height: 100%;
         }
 
+        .main.dashboard-mode .chat-wrapper {
+            max-width: none;
+            width: 100%;
+        }
+
+        .main.dashboard-mode {
+            padding: 24px 24px 40px;
+        }
+
+        #dashboard-root {
+            width: 100%;
+        }
+
         vanna-chat {
             width: 100%;
             height: 100%;
