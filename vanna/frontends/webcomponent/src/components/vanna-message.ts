@@ -1,5 +1,5 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state } from 'lit/decorators.js';
 import { vannaDesignTokens } from '../styles/vanna-design-tokens.js';
 
 @customElement('vanna-message')
@@ -51,6 +51,10 @@ export class VannaMessage extends LitElement {
         border-radius: var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-space-1);
       }
 
+      .message.assistant .message-content {
+        padding-right: 52px;
+      }
+
       .message.user {
         margin-left: auto;
         max-width: min(80%, 500px);
@@ -80,6 +84,32 @@ export class VannaMessage extends LitElement {
         letter-spacing: 0.01em;
         white-space: pre-wrap;
         font-weight: 400;
+      }
+
+      .copy-button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        padding: 4px 8px;
+        border-radius: 8px;
+        border: 1px solid var(--vanna-outline-dimmer);
+        background: var(--vanna-background-default);
+        color: var(--vanna-foreground-dimmer);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity var(--vanna-duration-150) ease, border-color var(--vanna-duration-150) ease, background var(--vanna-duration-150) ease;
+      }
+
+      .message.assistant:hover .copy-button,
+      .message.assistant .copy-button:focus {
+        opacity: 1;
+      }
+
+      .copy-button:hover {
+        border-color: var(--vanna-accent-primary-default);
+        background: var(--vanna-background-higher);
       }
 
       .message-content a {
@@ -191,6 +221,10 @@ export class VannaMessage extends LitElement {
         .message.user {
           max-width: 100%;
         }
+
+        .copy-button {
+          opacity: 1;
+        }
       }
     `
   ];
@@ -199,6 +233,36 @@ export class VannaMessage extends LitElement {
   @property() type: 'user' | 'assistant' = 'user';
   @property({ type: Number }) timestamp = Date.now();
   @property({ reflect: true }) theme = 'light';
+  @state() private copied = false;
+  private copyTimer: number | undefined;
+
+  private async handleCopy() {
+    const text = this.content || '';
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (error) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    this.copied = true;
+    if (this.copyTimer) {
+      window.clearTimeout(this.copyTimer);
+    }
+    this.copyTimer = window.setTimeout(() => {
+      this.copied = false;
+    }, 2000);
+  }
 
   private formatTimestamp(timestamp: number): string {
     return new Date(timestamp).toLocaleTimeString([], {
@@ -210,6 +274,11 @@ export class VannaMessage extends LitElement {
   render() {
     return html`
       <div class="message ${this.type}">
+        ${this.type === 'assistant' ? html`
+          <button class="copy-button" type="button" @click=${this.handleCopy}>
+            ${this.copied ? 'Copied' : 'Copy'}
+          </button>
+        ` : ''}
         <div class="message-content">${this.content}</div>
         <div class="message-timestamp">
           ${this.formatTimestamp(this.timestamp)}
