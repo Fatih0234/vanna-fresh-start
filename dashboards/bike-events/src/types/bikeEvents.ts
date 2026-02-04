@@ -32,6 +32,8 @@ export interface BikeEvent {
   bike_issue_emoji: string
 }
 
+export type DashboardId = 'overview' | 'heatmap' | 'backlog'
+
 export interface FilterState {
   dateRange: {
     start: Date | null
@@ -41,6 +43,22 @@ export interface FilterState {
   districts: string[]
   categories: string[]
   zipCodes: string[]
+}
+
+export interface HeatmapSettings {
+  showHeatmap: boolean
+  showClusters: boolean
+  radius: number
+  blur: number
+  maxIntensity: number
+  weightBy: 'count' | 'bike_confidence' | 'bike_issue_confidence'
+}
+
+export interface BacklogFilters {
+  buckets: BikeEvent['backlog_bucket'][]
+  confidenceMin: number
+  confidenceMax: number
+  confidenceMetric: 'bike_confidence' | 'bike_issue_confidence'
 }
 
 export interface CategoryStats {
