@@ -51,10 +51,6 @@ export class VannaMessage extends LitElement {
         border-radius: var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-chat-bubble-radius) var(--vanna-space-1);
       }
 
-      .message.assistant .message-content {
-        padding-right: 52px;
-      }
-
       .message.user {
         margin-left: auto;
         max-width: min(80%, 500px);
@@ -87,29 +83,28 @@ export class VannaMessage extends LitElement {
       }
 
       .copy-button {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        padding: 4px 8px;
-        border-radius: 8px;
-        border: 1px solid var(--vanna-outline-dimmer);
-        background: var(--vanna-background-default);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        background: transparent;
         color: var(--vanna-foreground-dimmer);
-        font-size: 11px;
-        font-weight: 600;
         cursor: pointer;
-        opacity: 0;
-        transition: opacity var(--vanna-duration-150) ease, border-color var(--vanna-duration-150) ease, background var(--vanna-duration-150) ease;
+        transition: border-color var(--vanna-duration-150) ease, background var(--vanna-duration-150) ease, color var(--vanna-duration-150) ease;
       }
 
-      .message.assistant:hover .copy-button,
-      .message.assistant .copy-button:focus {
-        opacity: 1;
+      .copy-button svg {
+        width: 14px;
+        height: 14px;
       }
 
       .copy-button:hover {
-        border-color: var(--vanna-accent-primary-default);
+        border-color: var(--vanna-outline-dimmer);
         background: var(--vanna-background-higher);
+        color: var(--vanna-foreground-default);
       }
 
       .message-content a {
@@ -221,10 +216,6 @@ export class VannaMessage extends LitElement {
         .message.user {
           max-width: 100%;
         }
-
-        .copy-button {
-          opacity: 1;
-        }
       }
     `
   ];
@@ -274,13 +265,21 @@ export class VannaMessage extends LitElement {
   render() {
     return html`
       <div class="message ${this.type}">
-        ${this.type === 'assistant' ? html`
-          <button class="copy-button" type="button" @click=${this.handleCopy}>
-            ${this.copied ? 'Copied' : 'Copy'}
-          </button>
-        ` : ''}
         <div class="message-content">${this.content}</div>
         <div class="message-timestamp">
+          ${this.type === 'assistant' ? html`
+            <button class="copy-button" type="button" @click=${this.handleCopy} aria-label="Copy response">
+              ${this.copied ? html`
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.5-1.5z"/>
+                </svg>
+              ` : html`
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M16 1H6c-1.1 0-2 .9-2 2v12h2V3h10V1zm3 4H10c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h9c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H10V7h9v14z"/>
+                </svg>
+              `}
+            </button>
+          ` : ''}
           ${this.formatTimestamp(this.timestamp)}
         </div>
       </div>
