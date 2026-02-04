@@ -115499,7 +115499,13 @@ let $d = class extends Yf {
         <div class="message-content">${this.content}</div>
         <div class="message-timestamp">
           ${this.type === "assistant" ? Ps`
-            <button class="copy-button" type="button" @click=${this.handleCopy} aria-label="Copy response">
+            <button
+              class="copy-button"
+              type="button"
+              @click=${this.handleCopy}
+              aria-label="Copy response"
+              title="${this.copied ? "Copied" : "Copy"}"
+            >
               ${this.copied ? Ps`
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.5-1.5z"/>
@@ -115599,9 +115605,9 @@ $d.styles = [
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 22px;
-        height: 22px;
-        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
         border: 1px solid transparent;
         background: transparent;
         color: var(--vanna-foreground-dimmer);
@@ -115610,8 +115616,8 @@ $d.styles = [
       }
 
       .copy-button svg {
-        width: 14px;
-        height: 14px;
+        width: 16px;
+        height: 16px;
       }
 
       .copy-button:hover {
@@ -115759,7 +115765,7 @@ console.log(
   "color: #2196F3; font-weight: bold;"
 );
 console.log(
-  "%c🕐 Built: 2026-02-04T00:09:37.129Z",
+  "%c🕐 Built: 2026-02-04T00:12:41.129Z",
   "color: #FF9800; font-weight: bold;"
 );
 console.log(

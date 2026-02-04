@@ -86,9 +86,9 @@ export class VannaMessage extends LitElement {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 22px;
-        height: 22px;
-        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
         border: 1px solid transparent;
         background: transparent;
         color: var(--vanna-foreground-dimmer);
@@ -97,8 +97,8 @@ export class VannaMessage extends LitElement {
       }
 
       .copy-button svg {
-        width: 14px;
-        height: 14px;
+        width: 16px;
+        height: 16px;
       }
 
       .copy-button:hover {
@@ -268,7 +268,13 @@ export class VannaMessage extends LitElement {
         <div class="message-content">${this.content}</div>
         <div class="message-timestamp">
           ${this.type === 'assistant' ? html`
-            <button class="copy-button" type="button" @click=${this.handleCopy} aria-label="Copy response">
+            <button
+              class="copy-button"
+              type="button"
+              @click=${this.handleCopy}
+              aria-label="Copy response"
+              title="${this.copied ? 'Copied' : 'Copy'}"
+            >
               ${this.copied ? html`
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M9 16.2l-3.5-3.5L4 14.2l5 5 12-12-1.5-1.5z"/>
