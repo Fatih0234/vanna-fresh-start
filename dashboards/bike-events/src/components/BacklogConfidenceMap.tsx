@@ -7,6 +7,7 @@ import { divIcon, type LatLngExpression } from 'leaflet'
 import type { BacklogFilters, BikeEvent } from '@/types/bikeEvents'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { CategoryIcon, getCategoryIconMarkup } from '@/utils/categoryIcons'
 
 interface BacklogConfidenceMapProps {
   events: BikeEvent[]
@@ -54,12 +55,12 @@ export default function BacklogConfidenceMap({ events, onMarkerClick, filters }:
     const confidenceValue = Number(event[filters.confidenceMetric] ?? 0)
     const color = confidenceColor(confidenceValue)
     const borderColor = event.status === 'open' ? '#22c55e' : '#ef4444'
-    const emoji = event.bike_issue_emoji || '🚲'
+    const iconMarkup = getCategoryIconMarkup(event.bike_issue_category, 'w-full h-full text-white')
 
     return divIcon({
       html: `
         <div style="background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor}; box-shadow: 0 3px 8px rgba(0,0,0,0.28);">
-          <span style="font-size: ${Math.max(12, size * 0.45)}px;">${emoji}</span>
+          <div style="width: ${Math.max(12, size * 0.45)}px; height: ${Math.max(12, size * 0.45)}px;">${iconMarkup}</div>
         </div>
       `,
       className: '',
@@ -96,8 +97,9 @@ export default function BacklogConfidenceMap({ events, onMarkerClick, filters }:
             >
               <Tooltip direction="top" offset={[0, -18]} opacity={0.95}>
                 <div className="text-sm max-w-xs">
-                  <div className="font-semibold mb-1">
-                    {event.bike_issue_category_emoji} {event.title}
+                  <div className="font-semibold mb-1 flex items-center gap-2">
+                    <CategoryIcon category={event.bike_issue_category} className="w-4 h-4" />
+                    <span>{event.title}</span>
                   </div>
                   <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">
                     Backlog bucket: <span className="font-semibold">{event.backlog_bucket}</span>

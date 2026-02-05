@@ -5,6 +5,7 @@ import { Dialog, Transition } from '@headlessui/react'
 import { XMarkIcon } from '@heroicons/react/24/outline'
 import type { BikeEvent } from '../types/bikeEvents'
 import { format } from 'date-fns'
+import { CategoryIcon } from '@/utils/categoryIcons'
 
 interface EventDetailsModalProps {
   event: BikeEvent
@@ -59,7 +60,7 @@ export default function EventDetailsModal({ event, onClose }: EventDetailsModalP
                     {event.title}
                   </Dialog.Title>
                   <div className="flex items-center space-x-2">
-                    <span className="text-3xl">{event.bike_issue_category_emoji}</span>
+                    <CategoryIcon category={event.bike_issue_category} className="w-8 h-8 text-gray-900 dark:text-gray-100" />
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-semibold ${
                         event.status === 'open'

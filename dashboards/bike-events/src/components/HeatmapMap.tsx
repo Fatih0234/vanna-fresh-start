@@ -8,6 +8,7 @@ import type { BikeEvent, HeatmapSettings } from '@/types/bikeEvents'
 import HeatmapLayer from './HeatmapLayer'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { CategoryIcon, getCategoryIconMarkup } from '@/utils/categoryIcons'
 
 interface HeatmapMapProps {
   events: BikeEvent[]
@@ -75,7 +76,7 @@ export default function HeatmapMap({ events, onMarkerClick, settings }: HeatmapM
     return divIcon({
       html: `
         <div class="custom-marker" style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor}; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
-          <span style="font-size: 16px;">${event.bike_issue_emoji}</span>
+          ${getCategoryIconMarkup(event.bike_issue_category, 'w-4 h-4 text-white')}
         </div>
       `,
       className: '',
@@ -123,8 +124,9 @@ export default function HeatmapMap({ events, onMarkerClick, settings }: HeatmapM
               >
                 <Tooltip direction="top" offset={[0, -18]} opacity={0.95}>
                   <div className="text-sm max-w-xs">
-                    <div className="font-semibold mb-1">
-                      {event.bike_issue_category_emoji} {event.title}
+                    <div className="font-semibold mb-1 flex items-center gap-2">
+                      <CategoryIcon category={event.bike_issue_category} className="w-4 h-4" />
+                      <span>{event.title}</span>
                     </div>
                     {event.description && (
                       <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">

@@ -7,6 +7,7 @@ import { divIcon, type LatLngExpression } from 'leaflet'
 import type { BikeEvent } from '@/types/bikeEvents'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import { CategoryIcon, getCategoryIconMarkup } from '@/utils/categoryIcons'
 
 interface BikeEventsMapProps {
   events: BikeEvent[]
@@ -46,7 +47,7 @@ export default function BikeEventsMap({ events, onMarkerClick }: BikeEventsMapPr
     return divIcon({
       html: `
         <div class="custom-marker" style="background-color: ${color}; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 3px solid ${borderColor}; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-          <span style="font-size: 20px;">${event.bike_issue_emoji}</span>
+          ${getCategoryIconMarkup(event.bike_issue_category, 'w-6 h-6 text-white')}
         </div>
       `,
       className: '',
@@ -93,8 +94,9 @@ export default function BikeEventsMap({ events, onMarkerClick }: BikeEventsMapPr
             >
               <Tooltip direction="top" offset={[0, -20]} opacity={0.95}>
                 <div className="text-sm max-w-xs">
-                  <div className="font-semibold mb-1">
-                    {event.bike_issue_category_emoji} {event.title}
+                  <div className="font-semibold mb-1 flex items-center gap-2">
+                    <CategoryIcon category={event.bike_issue_category} className="w-4 h-4" />
+                    <span>{event.title}</span>
                   </div>
                   {event.description && (
                     <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">
