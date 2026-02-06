@@ -2032,9 +2032,13 @@ def create_app(test_mode: bool = False):
 
     async function newChat() {
         currentConvId = await createConversationId();
+        currentView = 'chat';
+        destroyHomeView();
         setTab('chats');
         mountChat(currentConvId);
-        loadConversations();
+        await loadConversations();
+        stopChatPolling();
+        chatPollTimer = setInterval(loadConversations, 5000);
     }
 
     async function createConversationId() {
