@@ -1506,17 +1506,14 @@ def create_app(test_mode: bool = False):
             margin-bottom: 10px;
         }
 
-        .home-metric-row {
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 10px;
+        .home-card.metric {
+            text-align: center;
         }
 
         .home-metric-value {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: -0.03em;
         }
 
         .home-delta {
@@ -1530,22 +1527,77 @@ def create_app(test_mode: bool = False):
             white-space: nowrap;
         }
 
-        .home-delta.attn-high {
-            border-color: #ef4444;
-            background: rgba(239, 68, 68, 0.12);
+        .home-delta.neutral {
+            border-color: var(--border);
+            background: var(--bg);
+            color: var(--muted);
+        }
+
+        .home-delta.pos-low {
+            border-color: rgba(16, 185, 129, 0.35);
+            background: rgba(16, 185, 129, 0.08);
+            color: #065f46;
+        }
+
+        .home-delta.pos-med {
+            border-color: rgba(16, 185, 129, 0.55);
+            background: rgba(16, 185, 129, 0.14);
+            color: #065f46;
+        }
+
+        .home-delta.pos-high {
+            border-color: rgba(16, 185, 129, 0.75);
+            background: rgba(16, 185, 129, 0.22);
+            color: #064e3b;
+        }
+
+        .home-delta.neg-low {
+            border-color: rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.08);
             color: #991b1b;
         }
 
-        .home-delta.attn-med {
-            border-color: #f97316;
-            background: rgba(249, 115, 22, 0.12);
-            color: #9a3412;
+        .home-delta.neg-med {
+            border-color: rgba(239, 68, 68, 0.55);
+            background: rgba(239, 68, 68, 0.14);
+            color: #991b1b;
         }
 
-        .home-delta.attn-neg {
-            border-color: #10b981;
-            background: rgba(16, 185, 129, 0.10);
-            color: #065f46;
+        .home-delta.neg-high {
+            border-color: rgba(239, 68, 68, 0.75);
+            background: rgba(239, 68, 68, 0.22);
+            color: #7f1d1d;
+        }
+
+        .home-submetrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .home-submetric {
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            padding: 10px 10px 9px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .home-submetric .k {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 900;
+            color: var(--muted);
+        }
+
+        .home-submetric .v {
+            font-size: 16px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
         }
 
         .home-toplist {
@@ -2189,11 +2241,18 @@ def create_app(test_mode: bool = False):
     }
 
     function deltaClass(pct) {
-        if (pct === null || pct === undefined || Number.isNaN(pct)) return '';
-        if (pct >= 50) return 'attn-high';
-        if (pct >= 20) return 'attn-med';
-        if (pct < 0) return 'attn-neg';
-        return '';
+        if (pct === null || pct === undefined || Number.isNaN(pct)) return 'neutral';
+        const v = Number(pct);
+        if (v === 0) return 'neutral';
+        if (v > 0) {
+            if (v >= 50) return 'pos-high';
+            if (v >= 20) return 'pos-med';
+            return 'pos-low';
+        }
+        // Negative change
+        if (v <= -50) return 'neg-high';
+        if (v <= -20) return 'neg-med';
+        return 'neg-low';
     }
 
     function renderHomeHighlights(h) {
@@ -2210,13 +2269,25 @@ def create_app(test_mode: bool = False):
         const newPctClass = deltaClass(newPct);
 
         const card1 = `
-            <div class="home-card">
+            <div class="home-card metric">
                 <h3>New bike-related reports (${h.window_days || 7}d)</h3>
-                <div class="home-metric-row">
-                    <div class="home-metric-value">${Number(cur.new_events || 0).toLocaleString()}</div>
-                    <div class="home-delta ${newPctClass}">${formatPct(newPct)} vs prev</div>
+                <div class="home-metric-value">${Number(cur.new_events || 0).toLocaleString()}</div>
+                <div style="margin-top:10px;">
+                    <span class="home-delta ${newPctClass}">${formatPct(newPct)} vs prev ${h.window_days || 7}d</span>
                 </div>
-                <div class="home-note" style="margin-top:10px;">Open: ${Number(cur.open_events||0).toLocaleString()} • Closed: ${Number(cur.closed_events||0).toLocaleString()}</div>
+                <div class="home-note" style="margin-top:10px;">
+                    Previous = the prior rolling ${h.window_days || 7} days (days ${Number(h.window_days||7)+1}-${Number(h.window_days||7)*2} ago).
+                </div>
+                <div class="home-submetrics">
+                    <div class="home-submetric">
+                        <div class="k">Open</div>
+                        <div class="v">${Number(cur.open_events||0).toLocaleString()}</div>
+                    </div>
+                    <div class="home-submetric">
+                        <div class="k">Closed</div>
+                        <div class="v">${Number(cur.closed_events||0).toLocaleString()}</div>
+                    </div>
+                </div>
             </div>
         `;
 
