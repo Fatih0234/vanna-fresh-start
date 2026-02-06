@@ -1235,9 +1235,26 @@ def create_app(test_mode: bool = False):
             color: var(--muted);
         }
 
-        .sidebar-actions {
-            display: flex;
-            gap: 8px;
+        .chat-actions {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            padding: 8px 4px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chat-actions-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            padding: 4px 4px 0;
+        }
+
+        .chat-actions .btn {
+            width: 100%;
+            border-radius: 12px;
         }
 
         .sidebar-tabs {
@@ -1759,47 +1776,48 @@ def create_app(test_mode: bool = False):
         }
     </style>
 </head>
-<body>
-    <div class="app">
-        <div id="logged-in" class="shell">
-            <aside class="sidebar">
-                <div class="sidebar-brand">
-                    <div class="brand-mark">V</div>
-                    <div>
-                        <div class="brand-name">Vanna</div>
-                        <div class="brand-subtitle">Events Explorer</div>
-                    </div>
-                </div>
-                <div class="sidebar-title">Workspace</div>
-                <div class="sidebar-actions">
-                    <button class="btn ghost" id="sidebar-new-chat">New chat</button>
-                </div>
-                <div class="sidebar-tabs">
-                    <button class="sidebar-tab active" id="tab-home" type="button">Home</button>
-                    <button class="sidebar-tab" id="tab-chats" type="button">Chats</button>
-                    <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
-                </div>
-                <div class="sidebar-list" id="home-list">
-                    <div class="home-sidebar-note">
-                        Weekly highlights for Cologne bike-related reports.
-                        <br><br>
-                        Use the tabs to jump into Chats or the Bike Events dashboard.
-                    </div>
-                </div>
-                <div class="sidebar-list" id="conv-list" style="display: none;"></div>
-                <div class="sidebar-list" id="dashboard-list" style="display: none;">
-                    <div class="dashboard-card" data-dashboard="bike-events">
-                        <div class="dashboard-icon">🚴</div>
-                        <div class="dashboard-info">
-                            <div class="dashboard-name">Bike Events</div>
-                            <div class="dashboard-desc">Cologne infrastructure issues</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="sidebar-footer">
-                    <button class="btn primary" id="logout-btn">Log out</button>
-                </div>
-            </aside>
+	<body>
+	    <div class="app">
+	        <div id="logged-in" class="shell">
+	            <aside class="sidebar">
+	                <div class="sidebar-brand">
+	                    <div class="brand-mark">V</div>
+	                    <div>
+	                        <div class="brand-name">Vanna</div>
+	                        <div class="brand-subtitle">Events Explorer</div>
+	                    </div>
+	                </div>
+	                <div class="sidebar-title">Workspace</div>
+	                <div class="sidebar-tabs">
+	                    <button class="sidebar-tab active" id="tab-home" type="button">Home</button>
+	                    <button class="sidebar-tab" id="tab-chats" type="button">Chats</button>
+	                    <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
+	                </div>
+	                <div class="sidebar-list" id="home-list">
+	                    <div class="home-sidebar-note">
+	                        Weekly highlights for Cologne bike-related reports.
+	                        <br><br>
+	                        Use the tabs to jump into Chats or the Bike Events dashboard.
+	                    </div>
+	                </div>
+	                <div class="chat-actions" id="chat-actions">
+	                    <div class="chat-actions-title">Chats</div>
+	                    <button class="btn primary" id="sidebar-new-chat" type="button">New chat</button>
+	                </div>
+	                <div class="sidebar-list" id="conv-list" style="display: none;"></div>
+	                <div class="sidebar-list" id="dashboard-list" style="display: none;">
+	                    <div class="dashboard-card" data-dashboard="bike-events">
+	                        <div class="dashboard-icon">🚴</div>
+	                        <div class="dashboard-info">
+	                            <div class="dashboard-name">Bike Events</div>
+	                            <div class="dashboard-desc">Cologne infrastructure issues</div>
+	                        </div>
+	                    </div>
+	                </div>
+	                <div class="sidebar-footer">
+	                    <button class="btn primary" id="logout-btn">Log out</button>
+	                </div>
+	            </aside>
 
             <main class="main" id="main">
                 <div id="chat-wrapper" class="chat-wrapper"></div>
@@ -1821,47 +1839,52 @@ def create_app(test_mode: bool = False):
     let homeAbort = null;
     let homeModalHost = null;
     let homeModalEscHandler = null;
-    let bikeEventsCssText = null;
+	    let bikeEventsCssText = null;
 
-    const elLoggedIn = document.getElementById('logged-in');
-    const elMain = document.getElementById('main');
-    const elHomeList = document.getElementById('home-list');
-    const elConvList = document.getElementById('conv-list');
-    const elDashboardList = document.getElementById('dashboard-list');
-    const elTabHome = document.getElementById('tab-home');
-    const elTabChats = document.getElementById('tab-chats');
-    const elTabDashboards = document.getElementById('tab-dashboards');
+	    const elLoggedIn = document.getElementById('logged-in');
+	    const elMain = document.getElementById('main');
+	    const elHomeList = document.getElementById('home-list');
+	    const elConvList = document.getElementById('conv-list');
+	    const elDashboardList = document.getElementById('dashboard-list');
+	    const elChatActions = document.getElementById('chat-actions');
+	    const elTabHome = document.getElementById('tab-home');
+	    const elTabChats = document.getElementById('tab-chats');
+	    const elTabDashboards = document.getElementById('tab-dashboards');
 
-    function setLoggedIn() {
-        elLoggedIn.classList.add('active');
-    }
+	    function setLoggedIn() {
+	        elLoggedIn.classList.add('active');
+	    }
 
-    function setTab(tab) {
-        if (tab === 'home') {
-            elTabHome.classList.add('active');
-            elTabChats.classList.remove('active');
-            elTabDashboards.classList.remove('active');
-            elHomeList.style.display = 'flex';
-            elDashboardList.style.display = 'none';
-            elConvList.style.display = 'none';
-        } else if (tab === 'dashboards') {
-            elTabHome.classList.remove('active');
-            elTabDashboards.classList.add('active');
-            elTabChats.classList.remove('active');
-            elTabHome.classList.remove('active');
-            elDashboardList.style.display = 'flex';
-            elConvList.style.display = 'none';
-            elHomeList.style.display = 'none';
-        } else {
-            elTabHome.classList.remove('active');
-            elTabChats.classList.add('active');
-            elTabDashboards.classList.remove('active');
-            elTabHome.classList.remove('active');
-            elConvList.style.display = 'flex';
-            elDashboardList.style.display = 'none';
-            elHomeList.style.display = 'none';
-        }
-    }
+	    function setTab(tab) {
+	        // Chats-specific controls should only appear within the Chats section.
+	        if (elChatActions) {
+	            elChatActions.style.display = tab === 'chats' ? 'flex' : 'none';
+	        }
+	        if (tab === 'home') {
+	            elTabHome.classList.add('active');
+	            elTabChats.classList.remove('active');
+	            elTabDashboards.classList.remove('active');
+	            elHomeList.style.display = 'flex';
+	            elDashboardList.style.display = 'none';
+	            elConvList.style.display = 'none';
+	        } else if (tab === 'dashboards') {
+	            elTabHome.classList.remove('active');
+	            elTabDashboards.classList.add('active');
+	            elTabChats.classList.remove('active');
+	            elTabHome.classList.remove('active');
+	            elDashboardList.style.display = 'flex';
+	            elConvList.style.display = 'none';
+	            elHomeList.style.display = 'none';
+	        } else {
+	            elTabHome.classList.remove('active');
+	            elTabChats.classList.add('active');
+	            elTabDashboards.classList.remove('active');
+	            elTabHome.classList.remove('active');
+	            elConvList.style.display = 'flex';
+	            elDashboardList.style.display = 'none';
+	            elHomeList.style.display = 'none';
+	        }
+	    }
 
     function stopChatPolling() {
         if (chatPollTimer) clearInterval(chatPollTimer);
