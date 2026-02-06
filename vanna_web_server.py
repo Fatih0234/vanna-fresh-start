@@ -1640,6 +1640,16 @@ def create_app(test_mode: bool = False):
             transition: transform 120ms ease, border-color 120ms ease;
         }
 
+        .home-feed-item.status-open {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.22);
+        }
+
+        .home-feed-item.status-closed {
+            background: rgba(239, 68, 68, 0.07);
+            border-color: rgba(239, 68, 68, 0.20);
+        }
+
         .home-feed-item:hover {
             border-color: var(--accent);
             transform: translateY(-1px);
@@ -1660,25 +1670,158 @@ def create_app(test_mode: bool = False):
             color: var(--muted);
         }
 
-        .home-feed-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
+        /* Modal */
+        .home-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.38);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            z-index: 9999;
         }
 
-        .home-mini-btn {
-            border-radius: 999px;
-            padding: 8px 12px;
+        .home-modal-backdrop.active {
+            display: flex;
+        }
+
+        .home-modal {
+            width: min(820px, 96vw);
+            max-height: min(86vh, 820px);
+            overflow: auto;
+            border-radius: 18px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
+            padding: 16px 16px 14px;
+        }
+
+        .home-modal-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .home-modal-title {
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: -0.01em;
+            line-height: 1.2;
+        }
+
+        .home-modal-x {
+            border: 1px solid var(--border);
+            background: var(--bg);
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--muted);
+        }
+
+        .home-modal-x:hover {
+            border-color: var(--accent);
+            color: var(--text);
+        }
+
+        .home-modal-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .home-chip {
             font-size: 12px;
-            font-weight: 700;
+            font-weight: 800;
+            border-radius: 999px;
+            padding: 7px 10px;
             border: 1px solid var(--border);
             background: var(--bg);
             color: var(--text);
-            cursor: pointer;
         }
 
-        .home-mini-btn:hover {
+        .home-chip.open {
+            border-color: rgba(16, 185, 129, 0.35);
+            background: rgba(16, 185, 129, 0.10);
+            color: #065f46;
+        }
+
+        .home-chip.closed {
+            border-color: rgba(239, 68, 68, 0.30);
+            background: rgba(239, 68, 68, 0.09);
+            color: #991b1b;
+        }
+
+        .home-modal-body {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .home-kv {
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            padding: 12px;
+        }
+
+        .home-kv .k {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 900;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .home-kv .v {
+            font-size: 13px;
+            color: var(--text);
+            white-space: pre-wrap;
+            line-height: 1.45;
+        }
+
+        .home-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 12px;
+        }
+
+        .home-action-btn {
+            border-radius: 999px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 800;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        .home-action-btn.primary {
+            border-color: transparent;
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .home-action-btn:hover {
             border-color: var(--accent);
+        }
+
+        @media (max-width: 720px) {
+            .home-modal {
+                width: 100%;
+                max-height: 90vh;
+            }
         }
 
         .home-loading {
@@ -1796,6 +1939,8 @@ def create_app(test_mode: bool = False):
     let homeMap = null;
     let homeCluster = null;
     let homeAbort = null;
+    let homeModalBackdrop = null;
+    let homeModalEscHandler = null;
 
     const elLoggedIn = document.getElementById('logged-in');
     const elMain = document.getElementById('main');
@@ -1883,11 +2028,37 @@ def create_app(test_mode: bool = False):
         }
     }
 
+    function closeHomeModal() {
+        if (!homeModalBackdrop) return;
+        homeModalBackdrop.classList.remove('active');
+        const modal = homeModalBackdrop.querySelector('.home-modal');
+        if (modal) modal.innerHTML = '';
+        if (homeModalEscHandler) {
+            document.removeEventListener('keydown', homeModalEscHandler);
+            homeModalEscHandler = null;
+        }
+    }
+
+    function ensureHomeModal() {
+        if (homeModalBackdrop) return homeModalBackdrop;
+        const el = document.createElement('div');
+        el.id = 'home-modal-backdrop';
+        el.className = 'home-modal-backdrop';
+        el.innerHTML = '<div class="home-modal" role="dialog" aria-modal="true"></div>';
+        el.addEventListener('click', (e) => {
+            if (e.target === el) closeHomeModal();
+        });
+        document.body.appendChild(el);
+        homeModalBackdrop = el;
+        return homeModalBackdrop;
+    }
+
     function destroyHomeView() {
         if (homeAbort) {
             try { homeAbort.abort(); } catch(e) {}
             homeAbort = null;
         }
+        closeHomeModal();
         destroyHomeMap();
     }
 
@@ -2310,6 +2481,78 @@ def create_app(test_mode: bool = False):
         return 'https://sags-uns.stadt-koeln.de/requests/' + String(seq) + '-' + String(year);
     }
 
+    function normalizeStatus(status) {
+        const s = String(status || '').toLowerCase();
+        if (s === 'open' || s.includes('offen')) return 'open';
+        if (s === 'closed' || s.includes('geschlossen') || s.includes('erledigt')) return 'closed';
+        return 'unknown';
+    }
+
+    async function openHomeEventModal(summary) {
+        ensureHomeModal();
+        homeModalBackdrop.classList.add('active');
+
+        const modal = homeModalBackdrop.querySelector('.home-modal');
+        if (!modal) return;
+
+        modal.innerHTML = '<div class="home-loading">Loading event…</div>';
+
+        homeModalEscHandler = (e) => {
+            if (e.key === 'Escape') closeHomeModal();
+        };
+        document.addEventListener('keydown', homeModalEscHandler);
+
+        let details = null;
+        try {
+            if (summary && summary.service_request_id) {
+                const r = await fetch('/api/dashboards/bike-events/event/' + encodeURIComponent(summary.service_request_id), { credentials: 'include' });
+                if (r.ok) details = await r.json();
+            }
+        } catch(e) {}
+        const ev = details || summary || {};
+
+        const title = escapeHtml(ev.title || ev.bike_issue_category || 'Bike event');
+        const district = escapeHtml(ev.district || 'Unknown district');
+        const cat = escapeHtml(ev.bike_issue_category || ev.category || 'Unknown category');
+        const when = ev.requested_at ? new Date(ev.requested_at).toLocaleString() : 'n/a';
+        const status = normalizeStatus(ev.status);
+        const statusLabel = escapeHtml(ev.status || 'n/a');
+        const address = escapeHtml(ev.address_string || [ev.street, ev.house_number, ev.zip_code, ev.city].filter(Boolean).join(' ') || '');
+        const desc = escapeHtml(ev.description || '');
+        const url = sagsUnsUrl(ev) || sagsUnsUrl(summary);
+
+        const chipClass = status === 'open' ? 'open' : (status === 'closed' ? 'closed' : '');
+
+        modal.innerHTML = `
+            <div class="home-modal-head">
+                <div class="home-modal-title">${title}</div>
+                <button class="home-modal-x" type="button" aria-label="Close">×</button>
+            </div>
+            <div class="home-modal-chips">
+                <span class="home-chip ${chipClass}">${statusLabel}</span>
+                <span class="home-chip">${district}</span>
+                <span class="home-chip">${cat}</span>
+                <span class="home-chip">${escapeHtml(when)}</span>
+            </div>
+            <div class="home-modal-body">
+                ${address ? `<div class="home-kv"><div class="k">Address</div><div class="v">${address}</div></div>` : ''}
+                ${desc ? `<div class="home-kv"><div class="k">Description</div><div class="v">${desc}</div></div>` : `<div class="home-kv"><div class="k">Description</div><div class="v" style="color:var(--muted);">No description provided.</div></div>`}
+            </div>
+            <div class="home-modal-actions">
+                ${url ? `<button class="home-action-btn" type="button" id="home-open-source">Open source</button>` : ''}
+                <button class="home-action-btn primary" type="button" id="home-close-modal">Close</button>
+            </div>
+        `;
+
+        modal.querySelector('.home-modal-x')?.addEventListener('click', closeHomeModal);
+        modal.querySelector('#home-close-modal')?.addEventListener('click', closeHomeModal);
+        if (url) {
+            modal.querySelector('#home-open-source')?.addEventListener('click', () => {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            });
+        }
+    }
+
     function renderHomeFeed(events) {
         const el = document.getElementById('home-feed');
         if (!el) return;
@@ -2322,43 +2565,24 @@ def create_app(test_mode: bool = False):
             const title = escapeHtml(ev.title || ev.bike_issue_category || 'Bike event');
             const district = escapeHtml(ev.district || 'Unknown district');
             const cat = escapeHtml(ev.bike_issue_category || 'Unknown category');
-            const status = escapeHtml(ev.status || 'n/a');
+            const statusClass = normalizeStatus(ev.status);
             const when = ev.requested_at ? new Date(ev.requested_at).toLocaleString() : 'n/a';
             return `
-                <div class="home-feed-item" data-idx="${idx}">
+                <div class="home-feed-item status-${statusClass}" data-idx="${idx}">
                     <div class="home-feed-title">${title}</div>
                     <div class="home-feed-meta">
                         <div>${district} • ${cat}</div>
-                        <div>${when} • ${status}</div>
-                    </div>
-                    <div class="home-feed-actions">
-                        <button class="home-mini-btn home-open-source" type="button" data-idx="${idx}">Open source</button>
-                        <button class="home-mini-btn home-open-dashboard" type="button" data-dashboard="bike-events">Open in Dashboard</button>
+                        <div>${when}</div>
                     </div>
                 </div>
             `;
         }).join('');
 
         el.onclick = (e) => {
-            const btnSource = e.target.closest('.home-open-source');
-            if (btnSource) {
-                e.stopPropagation();
-                const idx = Number(btnSource.dataset.idx);
-                const url = sagsUnsUrl(items[idx]);
-                if (url) window.open(url, '_blank', 'noopener,noreferrer');
-                return;
-            }
-            const btnDash = e.target.closest('.home-open-dashboard');
-            if (btnDash) {
-                e.stopPropagation();
-                loadDashboard(btnDash.dataset.dashboard || 'bike-events');
-                return;
-            }
             const item = e.target.closest('.home-feed-item');
             if (item) {
                 const idx = Number(item.dataset.idx);
-                const url = sagsUnsUrl(items[idx]);
-                if (url) window.open(url, '_blank', 'noopener,noreferrer');
+                openHomeEventModal(items[idx]);
             }
         };
     }
