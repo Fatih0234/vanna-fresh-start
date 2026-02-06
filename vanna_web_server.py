@@ -500,6 +500,8 @@ def create_app(test_mode: bool = False):
                                 district,
                                 title,
                                 bike_issue_category,
+                                bike_issue_category_emoji,
+                                bike_issue_emoji,
                                 lat,
                                 lon,
                                 year,
@@ -1606,6 +1608,18 @@ def create_app(test_mode: bool = False):
             background: var(--panel);
         }
 
+        .home-emoji-marker {
+            width: 28px;
+            height: 28px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            font-weight: 900;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+            user-select: none;
+        }
+
         .home-note {
             font-size: 12px;
             color: var(--muted);
@@ -2404,13 +2418,15 @@ def create_app(test_mode: bool = False):
         }
 
         shown.forEach(ev => {
-            const fill = categoryColor(ev.bike_issue_category);
             const border = statusBorder(ev.status);
+            const fill = categoryColor(ev.bike_issue_category);
+            const bg = 'rgba(255,255,255,0.92)';
+            const emoji = (ev.bike_issue_category_emoji || ev.bike_issue_emoji || '🚴');
             const icon = L.divIcon({
                 className: '',
-                html: '<div style="width:12px;height:12px;border-radius:999px;background:' + fill + ';border:2px solid ' + border + ';box-shadow:0 8px 18px rgba(15,23,42,0.18);"></div>',
-                iconSize: [12, 12],
-                iconAnchor: [6, 6],
+                html: '<div class="home-emoji-marker" style="background:' + bg + ';border:2px solid ' + border + ';box-shadow: 0 10px 22px rgba(15,23,42,0.18), 0 0 0 4px ' + fill + '20;">' + emoji + '</div>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
             });
             const m = L.marker([ev.lat, ev.lon], { icon });
             const url = sagsUnsUrl(ev);
