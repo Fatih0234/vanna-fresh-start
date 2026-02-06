@@ -307,7 +307,7 @@ def create_app(test_mode: bool = False):
                 },
                 "top_categories": [],
                 "top_districts": [],
-                "data_health": {"last_pipeline_run": None, "labeling_runs": None},
+                "top_services": [],
             }
 
             try:
@@ -394,11 +394,12 @@ def create_app(test_mode: bool = False):
                                     now() AS now_ts,
                                     now() - (%s || ' days')::interval AS cur_start
                             )
-                            SELECT bike_issue_category AS category, COUNT(*) AS count
+                            SELECT
+                                coalesce(nullif(trim(bike_issue_category), ''), 'Unknown') AS category,
+                                COUNT(*) AS count
                             FROM public.v_bike_events, bounds b
                             WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
-                              AND coalesce(bike_issue_category, '') <> ''
-                            GROUP BY bike_issue_category
+                            GROUP BY 1
                             ORDER BY COUNT(*) DESC
                             LIMIT 5;
                             """,
@@ -416,11 +417,12 @@ def create_app(test_mode: bool = False):
                                     now() AS now_ts,
                                     now() - (%s || ' days')::interval AS cur_start
                             )
-                            SELECT district, COUNT(*) AS count
+                            SELECT
+                                coalesce(nullif(trim(district), ''), 'Unknown') AS district,
+                                COUNT(*) AS count
                             FROM public.v_bike_events, bounds b
                             WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
-                              AND coalesce(district, '') <> ''
-                            GROUP BY district
+                            GROUP BY 1
                             ORDER BY COUNT(*) DESC
                             LIMIT 5;
                             """,
@@ -431,79 +433,30 @@ def create_app(test_mode: bool = False):
                             for r in (cur.fetchall() or [])
                         ]
 
-                # Data health: optional. Guard hard against schema drift.
-                try:
-                    with get_connection() as conn:
-                        with conn.cursor() as cur:
-                            cur.execute(
-                                """
+                with get_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            WITH bounds AS (
                                 SELECT
-                                    run_id,
-                                    status,
-                                    started_at,
-                                    finished_at,
-                                    inserted_count,
-                                    updated_count,
-                                    rejected_count
-                                FROM public.pipeline_runs
-                                ORDER BY finished_at DESC NULLS LAST, started_at DESC NULLS LAST
-                                LIMIT 1;
-                                """
+                                    now() AS now_ts,
+                                    now() - (%s || ' days')::interval AS cur_start
                             )
-                            row = cur.fetchone()
-                            if row:
-                                (
-                                    run_id,
-                                    status,
-                                    started_at,
-                                    finished_at,
-                                    inserted_count,
-                                    updated_count,
-                                    rejected_count,
-                                ) = row
-                                payload["data_health"]["last_pipeline_run"] = {
-                                    "run_id": run_id,
-                                    "status": status,
-                                    "started_at": _dt_to_iso(started_at),
-                                    "finished_at": _dt_to_iso(finished_at),
-                                    "inserted_count": inserted_count,
-                                    "updated_count": updated_count,
-                                    "rejected_count": rejected_count,
-                                }
-                except Exception:
-                    payload["data_health"]["last_pipeline_run"] = None
-
-                try:
-                    with get_connection() as conn:
-                        with conn.cursor() as cur:
-                            cur.execute(
-                                "SELECT * FROM public.labeling_runs ORDER BY finished_at DESC NULLS LAST, started_at DESC NULLS LAST LIMIT 5;"
-                            )
-                            cols = [d[0] for d in (cur.description or [])]
-                            rows = cur.fetchall() or []
-                            allowed = {
-                                "run_id",
-                                "status",
-                                "phase",
-                                "started_at",
-                                "finished_at",
-                                "inserted_count",
-                                "updated_count",
-                                "rejected_count",
-                                "labeled_count",
-                                "model",
-                                "notes",
-                            }
-                            recent = []
-                            for r in rows:
-                                item = {}
-                                for k, v in zip(cols, r):
-                                    if k in allowed:
-                                        item[k] = _dt_to_iso(v)
-                                recent.append(item)
-                            payload["data_health"]["labeling_runs"] = {"recent": recent}
-                except Exception:
-                    payload["data_health"]["labeling_runs"] = None
+                            SELECT
+                                coalesce(nullif(trim(service_name), ''), 'Unknown') AS service_name,
+                                COUNT(*) AS count
+                            FROM public.v_bike_events, bounds b
+                            WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
+                            GROUP BY 1
+                            ORDER BY COUNT(*) DESC
+                            LIMIT 5;
+                            """,
+                            (window_days_int,),
+                        )
+                        payload["top_services"] = [
+                            {"service_name": r[0], "count": int(r[1] or 0)}
+                            for r in (cur.fetchall() or [])
+                        ]
 
                 return payload
 
@@ -1961,7 +1914,7 @@ def create_app(test_mode: bool = False):
                 <div class="home-card"><h3>New bike-related reports (7d)</h3><div class="home-loading">Loading...</div></div>
                 <div class="home-card"><h3>Top issue categories (7d)</h3><div class="home-loading">Loading...</div></div>
                 <div class="home-card"><h3>Top districts (7d)</h3><div class="home-loading">Loading...</div></div>
-                <div class="home-card"><h3>Data health</h3><div class="home-loading">Loading...</div></div>
+                <div class="home-card"><h3>Top services (7d)</h3><div class="home-loading">Loading...</div></div>
             </div>
             <div class="home-section">
                 <div class="home-section-title">Map (last 7 days)</div>
@@ -2263,7 +2216,7 @@ def create_app(test_mode: bool = False):
         const delta = h.delta || {};
         const topCats = h.top_categories || [];
         const topDists = h.top_districts || [];
-        const health = (h.data_health || {}).last_pipeline_run;
+        const topServices = h.top_services || [];
 
         const newPct = delta.new_events_pct;
         const newPctClass = deltaClass(newPct);
@@ -2319,23 +2272,17 @@ def create_app(test_mode: bool = False):
             </div>
         `;
 
-        let healthHtml = '<div class="home-loading">No pipeline run data.</div>';
-        if (health) {
-            const finished = health.finished_at ? new Date(health.finished_at).toLocaleString() : 'n/a';
-            healthHtml = `
-                <div style="font-size:13px;font-weight:700;margin-bottom:6px;">Last pipeline run</div>
-                <div class="home-toplist">
-                    <div class="home-topitem"><div class="label">Status</div><div class="count">${escapeHtml(String(health.status || 'n/a'))}</div></div>
-                    <div class="home-topitem"><div class="label">Finished</div><div class="count">${escapeHtml(finished)}</div></div>
-                </div>
-                <div class="home-note" style="margin-top:10px;">Inserted: ${Number(health.inserted_count||0).toLocaleString()} • Updated: ${Number(health.updated_count||0).toLocaleString()} • Rejected: ${Number(health.rejected_count||0).toLocaleString()}</div>
-            `;
-        }
-
         const card4 = `
             <div class="home-card">
-                <h3>Data health</h3>
-                ${healthHtml}
+                <h3>Top services (${h.window_days || 7}d)</h3>
+                <div class="home-toplist">
+                    ${topServices.length ? topServices.map(it => `
+                        <div class="home-topitem">
+                            <div class="label">${escapeHtml(it.service_name || 'Unknown')}</div>
+                            <div class="count">${Number(it.count || 0).toLocaleString()}</div>
+                        </div>
+                    `).join('') : '<div class="home-loading">No service data in this window.</div>'}
+                </div>
             </div>
         `;
 

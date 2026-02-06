@@ -43,30 +43,12 @@ class FakeCursor:
             return
 
         # Data health: pipeline runs
-        if "from public.pipeline_runs" in q:
-            self._one = (
-                "run_123",
-                "success",
-                datetime(2026, 2, 6, 10, 0, tzinfo=timezone.utc),
-                datetime(2026, 2, 6, 10, 5, tzinfo=timezone.utc),
-                11,
-                22,
-                0,
-            )
-            self.description = None
-            self._rows = []
-            return
-
-        # Data health: labeling runs (optional)
-        if "from public.labeling_runs" in q:
-            self.description = [("run_id",), ("status",), ("finished_at",)]
+        if "group by 1" in q and "service_name" in q:
             self._one = None
+            self.description = [("service_name",), ("count",)]
             self._rows = [
-                (
-                    "label_1",
-                    "success",
-                    datetime(2026, 2, 6, 9, 0, tzinfo=timezone.utc),
-                )
+                ("Road", 6),
+                ("Bike lanes", 4),
             ]
             return
 
@@ -172,7 +154,7 @@ class TestHomeApi(unittest.TestCase):
             self.assertIn("delta", data1)
             self.assertIn("top_categories", data1)
             self.assertIn("top_districts", data1)
-            self.assertIn("data_health", data1)
+            self.assertIn("top_services", data1)
 
             r2 = self.client.get(
                 "/api/home/recent?window_days=7&limit=10", cookies={"session": "token"}
@@ -186,4 +168,3 @@ class TestHomeApi(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
