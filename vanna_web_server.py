@@ -1620,6 +1620,38 @@ def create_app(test_mode: bool = False):
             user-select: none;
         }
 
+        .leaflet-tooltip.home-tooltip {
+            border-radius: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+            padding: 10px 10px 9px;
+            background: rgba(255, 255, 255, 0.98);
+            color: #0f172a;
+            font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+        }
+
+        .leaflet-tooltip.home-tooltip .t-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .leaflet-tooltip.home-tooltip .t-desc {
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 6px;
+            max-width: 260px;
+        }
+
+        .leaflet-tooltip.home-tooltip .t-hint {
+            font-size: 11px;
+            color: #64748b;
+            font-style: italic;
+        }
+
         .home-note {
             font-size: 12px;
             color: var(--muted);
@@ -2411,7 +2443,7 @@ def create_app(test_mode: bool = False):
                 <div class="flex-1">
                     <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">${escapeHtml(ev.title || 'Bike event')}</div>
                     <div class="flex items-center space-x-2">
-                        <span class="text-2xl">${escapeHtml(String(ev.bike_issue_category_emoji || ev.bike_issue_emoji || '🚴').trim().split(/\\s+/)[0])}</span>
+                        <span class="text-2xl">${escapeHtml(String(ev.bike_issue_emoji || '🚴').trim())}</span>
                         <span class="px-3 py-1 rounded-full text-xs font-semibold ${status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${escapeHtml(String(ev.status || '').toUpperCase() || 'N/A')}</span>
                     </div>
                 </div>
@@ -2518,13 +2550,6 @@ def create_app(test_mode: bool = False):
         return palette[hashString(key) % palette.length];
     }
 
-    function emojiOnly(raw) {
-        const s = String(raw || '').trim();
-        if (!s) return '';
-        // Some emoji columns may contain "EMOJI Label" - keep only the first token.
-        return s.split(/\\s+/)[0];
-    }
-
     function statusBorder(status) {
         const s = String(status || '').toLowerCase();
         if (s === 'open' || s.includes('offen')) return '#16a34a';
@@ -2565,7 +2590,7 @@ def create_app(test_mode: bool = False):
             const border = statusBorder(ev.status);
             const fill = categoryColor(ev.bike_issue_category);
             const bg = 'rgba(255,255,255,0.92)';
-            const emoji = emojiOnly(ev.bike_issue_category_emoji || ev.bike_issue_emoji) || '🚴';
+            const emoji = String(ev.bike_issue_emoji || '🚴').trim();
             const icon = L.divIcon({
                 className: '',
                 html: '<div class="home-emoji-marker" style="background:' + bg + ';border:2px solid ' + border + ';box-shadow: 0 10px 22px rgba(15,23,42,0.18), 0 0 0 4px ' + fill + '20;">' + emoji + '</div>',
@@ -2573,15 +2598,14 @@ def create_app(test_mode: bool = False):
                 iconAnchor: [14, 14],
             });
             const m = L.marker([ev.lat, ev.lon], { icon });
-            const url = sagsUnsUrl(ev);
-            const title = escapeHtml(ev.title || ev.bike_issue_category || 'Bike event');
-            const meta = escapeHtml((ev.district || 'Unknown district') + ' • ' + (ev.status || 'n/a'));
-            const popup = '<div style="font-family:Manrope,system-ui,sans-serif;min-width:180px;">' +
-                '<div style="font-weight:800;font-size:13px;margin-bottom:4px;">' + title + '</div>' +
-                '<div style="color:#64748b;font-size:12px;margin-bottom:8px;">' + meta + '</div>' +
-                (url ? '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="font-weight:700;color:#2563eb;text-decoration:none;">Open source</a>' : '') +
-                '</div>';
-            m.bindPopup(popup);
+            const ttTitle = escapeHtml(ev.title || ev.bike_issue_category || 'Bike event');
+            const ttDesc = ev.description ? escapeHtml(String(ev.description).slice(0, 150) + (String(ev.description).length > 150 ? '...' : '')) : '';
+            const ttHtml =
+                '<div class="t-head"><span style="font-size:16px;line-height:1;">' + escapeHtml(emoji) + '</span><span>' + ttTitle + '</span></div>' +
+                (ttDesc ? '<div class="t-desc">' + ttDesc + '</div>' : '') +
+                '<div class="t-hint">Click for full details</div>';
+            m.bindTooltip(ttHtml, { direction: 'top', offset: [0, -18], opacity: 0.95, className: 'home-tooltip' });
+            m.on('click', () => openHomeEventModal(ev));
             homeCluster.addLayer(m);
         });
         homeCluster.addTo(homeMap);
