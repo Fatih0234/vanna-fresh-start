@@ -395,7 +395,7 @@ def create_app(test_mode: bool = False):
                                     now() - (%s || ' days')::interval AS cur_start
                             )
                             SELECT
-                                coalesce(nullif(trim(bike_issue_category), ''), 'Unknown') AS category,
+                                coalesce(nullif(btrim(bike_issue_category::text), ''), 'Unknown') AS category,
                                 COUNT(*) AS count
                             FROM public.v_bike_events, bounds b
                             WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
@@ -418,7 +418,7 @@ def create_app(test_mode: bool = False):
                                     now() - (%s || ' days')::interval AS cur_start
                             )
                             SELECT
-                                coalesce(nullif(trim(district), ''), 'Unknown') AS district,
+                                coalesce(nullif(btrim(district::text), ''), 'Unknown') AS district,
                                 COUNT(*) AS count
                             FROM public.v_bike_events, bounds b
                             WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
@@ -443,7 +443,7 @@ def create_app(test_mode: bool = False):
                                     now() - (%s || ' days')::interval AS cur_start
                             )
                             SELECT
-                                coalesce(nullif(trim(service_name), ''), 'Unknown') AS service_name,
+                                coalesce(nullif(btrim(service_name::text), ''), 'Unknown') AS service_name,
                                 COUNT(*) AS count
                             FROM public.v_bike_events, bounds b
                             WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
@@ -1670,159 +1670,7 @@ def create_app(test_mode: bool = False):
             color: var(--muted);
         }
 
-        /* Modal */
-        .home-modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.38);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 18px;
-            z-index: 9999;
-        }
-
-        .home-modal-backdrop.active {
-            display: flex;
-        }
-
-        .home-modal {
-            width: min(820px, 96vw);
-            max-height: min(86vh, 820px);
-            overflow: auto;
-            border-radius: 18px;
-            background: var(--panel);
-            border: 1px solid var(--border);
-            box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35);
-            padding: 16px 16px 14px;
-        }
-
-        .home-modal-head {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-
-        .home-modal-title {
-            font-size: 16px;
-            font-weight: 900;
-            letter-spacing: -0.01em;
-            line-height: 1.2;
-        }
-
-        .home-modal-x {
-            border: 1px solid var(--border);
-            background: var(--bg);
-            width: 36px;
-            height: 36px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 900;
-            color: var(--muted);
-        }
-
-        .home-modal-x:hover {
-            border-color: var(--accent);
-            color: var(--text);
-        }
-
-        .home-modal-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .home-chip {
-            font-size: 12px;
-            font-weight: 800;
-            border-radius: 999px;
-            padding: 7px 10px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            color: var(--text);
-        }
-
-        .home-chip.open {
-            border-color: rgba(16, 185, 129, 0.35);
-            background: rgba(16, 185, 129, 0.10);
-            color: #065f46;
-        }
-
-        .home-chip.closed {
-            border-color: rgba(239, 68, 68, 0.30);
-            background: rgba(239, 68, 68, 0.09);
-            color: #991b1b;
-        }
-
-        .home-modal-body {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 12px;
-        }
-
-        .home-kv {
-            border-radius: 16px;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            padding: 12px;
-        }
-
-        .home-kv .k {
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            font-weight: 900;
-            color: var(--muted);
-            margin-bottom: 6px;
-        }
-
-        .home-kv .v {
-            font-size: 13px;
-            color: var(--text);
-            white-space: pre-wrap;
-            line-height: 1.45;
-        }
-
-        .home-modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 12px;
-        }
-
-        .home-action-btn {
-            border-radius: 999px;
-            padding: 10px 14px;
-            font-size: 13px;
-            font-weight: 800;
-            border: 1px solid var(--border);
-            background: var(--bg);
-            cursor: pointer;
-            color: var(--text);
-        }
-
-        .home-action-btn.primary {
-            border-color: transparent;
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .home-action-btn:hover {
-            border-color: var(--accent);
-        }
-
-        @media (max-width: 720px) {
-            .home-modal {
-                width: 100%;
-                max-height: 90vh;
-            }
-        }
+        /* Modal: uses the Bike Events dashboard modal design (Tailwind CSS in a shadow root). */
 
         .home-loading {
             color: var(--muted);
@@ -1939,8 +1787,9 @@ def create_app(test_mode: bool = False):
     let homeMap = null;
     let homeCluster = null;
     let homeAbort = null;
-    let homeModalBackdrop = null;
+    let homeModalHost = null;
     let homeModalEscHandler = null;
+    let bikeEventsCssText = null;
 
     const elLoggedIn = document.getElementById('logged-in');
     const elMain = document.getElementById('main');
@@ -2029,28 +1878,69 @@ def create_app(test_mode: bool = False):
     }
 
     function closeHomeModal() {
-        if (!homeModalBackdrop) return;
-        homeModalBackdrop.classList.remove('active');
-        const modal = homeModalBackdrop.querySelector('.home-modal');
-        if (modal) modal.innerHTML = '';
+        if (!homeModalHost) return;
+        homeModalHost.style.display = 'none';
+        try {
+            const root = homeModalHost.shadowRoot;
+            const panel = root && root.getElementById('home-dashboard-modal-panel');
+            if (panel) panel.innerHTML = '';
+        } catch(e) {}
         if (homeModalEscHandler) {
             document.removeEventListener('keydown', homeModalEscHandler);
             homeModalEscHandler = null;
         }
     }
 
-    function ensureHomeModal() {
-        if (homeModalBackdrop) return homeModalBackdrop;
-        const el = document.createElement('div');
-        el.id = 'home-modal-backdrop';
-        el.className = 'home-modal-backdrop';
-        el.innerHTML = '<div class="home-modal" role="dialog" aria-modal="true"></div>';
-        el.addEventListener('click', (e) => {
-            if (e.target === el) closeHomeModal();
-        });
-        document.body.appendChild(el);
-        homeModalBackdrop = el;
-        return homeModalBackdrop;
+    async function ensureBikeEventsCssLoaded() {
+        if (bikeEventsCssText) return bikeEventsCssText;
+        const r = await fetch('/dashboards/bike-events/dist/bike-events.css', { credentials: 'include' });
+        if (!r.ok) throw new Error('Failed to load dashboard CSS');
+        bikeEventsCssText = await r.text();
+        return bikeEventsCssText;
+    }
+
+    async function ensureHomeModal() {
+        if (homeModalHost) return homeModalHost;
+        const host = document.createElement('div');
+        host.id = 'home-dashboard-modal-host';
+        host.style.position = 'fixed';
+        host.style.inset = '0';
+        host.style.zIndex = '9999';
+        host.style.display = 'none';
+        host.style.pointerEvents = 'auto';
+        const shadow = host.attachShadow({ mode: 'open' });
+
+        const cssText = await ensureBikeEventsCssLoaded();
+        const style = document.createElement('style');
+        style.textContent = cssText;
+
+        // Basic host reset inside shadow root so Tailwind styles apply predictably.
+        const base = document.createElement('style');
+        base.textContent = `
+            :host { all: initial; }
+            * { box-sizing: border-box; }
+        `;
+
+        const wrap = document.createElement('div');
+        wrap.id = 'home-dashboard-modal-wrap';
+        wrap.innerHTML = `
+            <div class="relative z-[9999]">
+                <div id="home-dashboard-modal-backdrop" class="fixed inset-0 bg-black/30 backdrop-blur-sm"></div>
+                <div class="fixed inset-0 flex items-center justify-center p-4">
+                    <div id="home-dashboard-modal-panel" class="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-h-[90vh] overflow-y-auto"></div>
+                </div>
+            </div>
+        `;
+
+        shadow.appendChild(base);
+        shadow.appendChild(style);
+        shadow.appendChild(wrap);
+
+        shadow.getElementById('home-dashboard-modal-backdrop')?.addEventListener('click', closeHomeModal);
+
+        document.body.appendChild(host);
+        homeModalHost = host;
+        return homeModalHost;
     }
 
     function destroyHomeView() {
@@ -2489,13 +2379,12 @@ def create_app(test_mode: bool = False):
     }
 
     async function openHomeEventModal(summary) {
-        ensureHomeModal();
-        homeModalBackdrop.classList.add('active');
-
-        const modal = homeModalBackdrop.querySelector('.home-modal');
+        const host = await ensureHomeModal();
+        host.style.display = 'block';
+        const modal = host.shadowRoot && host.shadowRoot.getElementById('home-dashboard-modal-panel');
         if (!modal) return;
 
-        modal.innerHTML = '<div class="home-loading">Loading event…</div>';
+        modal.innerHTML = '<div class="text-center text-gray-600 dark:text-gray-400">Loading event...</div>';
 
         homeModalEscHandler = (e) => {
             if (e.key === 'Escape') closeHomeModal();
@@ -2511,46 +2400,70 @@ def create_app(test_mode: bool = False):
         } catch(e) {}
         const ev = details || summary || {};
 
-        const title = escapeHtml(ev.title || ev.bike_issue_category || 'Bike event');
-        const district = escapeHtml(ev.district || 'Unknown district');
-        const cat = escapeHtml(ev.bike_issue_category || ev.category || 'Unknown category');
-        const when = ev.requested_at ? new Date(ev.requested_at).toLocaleString() : 'n/a';
-        const status = normalizeStatus(ev.status);
-        const statusLabel = escapeHtml(ev.status || 'n/a');
-        const address = escapeHtml(ev.address_string || [ev.street, ev.house_number, ev.zip_code, ev.city].filter(Boolean).join(' ') || '');
-        const desc = escapeHtml(ev.description || '');
-        const url = sagsUnsUrl(ev) || sagsUnsUrl(summary);
-
-        const chipClass = status === 'open' ? 'open' : (status === 'closed' ? 'closed' : '');
+        // Copy the dashboard modal structure/classes (see Bike Events dashboard).
+        const mediaUrl = ev.media_path ? ('https://sags-uns.stadt-koeln.de/system/files/' + ev.media_path) : null;
+        const sourceUrl = sagsUnsUrl(ev) || sagsUnsUrl(summary);
+        const status = String(ev.status || '').toLowerCase() === 'open' ? 'open' : 'closed';
+        const reported = ev.requested_at ? new Date(ev.requested_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'n/a';
 
         modal.innerHTML = `
-            <div class="home-modal-head">
-                <div class="home-modal-title">${title}</div>
-                <button class="home-modal-x" type="button" aria-label="Close">×</button>
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">${escapeHtml(ev.title || 'Bike event')}</div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">${escapeHtml(String(ev.bike_issue_category_emoji || ev.bike_issue_emoji || '🚴').trim().split(/\\s+/)[0])}</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${escapeHtml(String(ev.status || '').toUpperCase() || 'N/A')}</span>
+                    </div>
+                </div>
+                <button id="home-dashboard-modal-close-x" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" type="button" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-            <div class="home-modal-chips">
-                <span class="home-chip ${chipClass}">${statusLabel}</span>
-                <span class="home-chip">${district}</span>
-                <span class="home-chip">${cat}</span>
-                <span class="home-chip">${escapeHtml(when)}</span>
+            ${mediaUrl ? `<div class="mb-6"><img src="${mediaUrl}" alt="${escapeHtml(ev.title || '')}" class="w-full h-64 object-cover rounded-lg shadow-md" onerror="this.style.display='none'"></div>` : ''}
+            <div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Service ID</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(ev.service_request_id || '')}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Reported</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(reported)}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100 capitalize">${escapeHtml(ev.status || '')}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Backlog</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(ev.backlog_bucket || '')}</p>
+                </div>
             </div>
-            <div class="home-modal-body">
-                ${address ? `<div class="home-kv"><div class="k">Address</div><div class="v">${address}</div></div>` : ''}
-                ${desc ? `<div class="home-kv"><div class="k">Description</div><div class="v">${desc}</div></div>` : `<div class="home-kv"><div class="k">Description</div><div class="v" style="color:var(--muted);">No description provided.</div></div>`}
+            ${ev.description ? `
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">${escapeHtml(ev.description)}</p>
+                </div>
+            ` : ''}
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location</h3>
+                <p class="text-sm text-gray-900 dark:text-gray-100 mb-2">${escapeHtml(ev.address_string || '')}</p>
+                <div class="grid grid-cols-3 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    ${ev.district ? `<div>District: ${escapeHtml(ev.district)}</div>` : ''}
+                    ${ev.zip_code ? `<div>ZIP: ${escapeHtml(ev.zip_code)}</div>` : ''}
+                    ${ev.street ? `<div>Street: ${escapeHtml(ev.street)}</div>` : ''}
+                </div>
+                ${ev.cat_path ? `<p class="text-xs text-gray-500 dark:text-gray-500 mt-2">${escapeHtml(ev.cat_path)}</p>` : ''}
             </div>
-            <div class="home-modal-actions">
-                ${url ? `<button class="home-action-btn" type="button" id="home-open-source">Open source</button>` : ''}
-                <button class="home-action-btn primary" type="button" id="home-close-modal">Close</button>
+            <div class="flex space-x-3">
+                ${sourceUrl ? `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md text-center transition-colors">View on Cologne Website →</a>` : ''}
+                <button id="home-dashboard-modal-close" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors" type="button">Close</button>
             </div>
         `;
 
-        modal.querySelector('.home-modal-x')?.addEventListener('click', closeHomeModal);
-        modal.querySelector('#home-close-modal')?.addEventListener('click', closeHomeModal);
-        if (url) {
-            modal.querySelector('#home-open-source')?.addEventListener('click', () => {
-                window.open(url, '_blank', 'noopener,noreferrer');
-            });
-        }
+        modal.querySelector('#home-dashboard-modal-close')?.addEventListener('click', closeHomeModal);
+        modal.querySelector('#home-dashboard-modal-close-x')?.addEventListener('click', closeHomeModal);
     }
 
     function renderHomeFeed(events) {
@@ -2605,6 +2518,13 @@ def create_app(test_mode: bool = False):
         return palette[hashString(key) % palette.length];
     }
 
+    function emojiOnly(raw) {
+        const s = String(raw || '').trim();
+        if (!s) return '';
+        // Some emoji columns may contain "EMOJI Label" - keep only the first token.
+        return s.split(/\\s+/)[0];
+    }
+
     function statusBorder(status) {
         const s = String(status || '').toLowerCase();
         if (s === 'open' || s.includes('offen')) return '#16a34a';
@@ -2645,7 +2565,7 @@ def create_app(test_mode: bool = False):
             const border = statusBorder(ev.status);
             const fill = categoryColor(ev.bike_issue_category);
             const bg = 'rgba(255,255,255,0.92)';
-            const emoji = (ev.bike_issue_category_emoji || ev.bike_issue_emoji || '🚴');
+            const emoji = emojiOnly(ev.bike_issue_category_emoji || ev.bike_issue_emoji) || '🚴';
             const icon = L.divIcon({
                 className: '',
                 html: '<div class="home-emoji-marker" style="background:' + bg + ';border:2px solid ' + border + ';box-shadow: 0 10px 22px rgba(15,23,42,0.18), 0 0 0 4px ' + fill + '20;">' + emoji + '</div>',
