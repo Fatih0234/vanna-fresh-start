@@ -262,8 +262,281 @@ def validate_env_vars():
     print(f"All required environment variables are set (using {llm_provider.upper()})")
 
 
-def create_app():
+def create_app(test_mode: bool = False):
     """Create and configure the FastAPI application."""
+
+    from fastapi import FastAPI, Request, HTTPException
+    from fastapi.responses import HTMLResponse, JSONResponse
+    from fastapi.staticfiles import StaticFiles
+
+    def _require_auth(request: Request):
+        token = request.cookies.get("session")
+        if not token or not verify_jwt(token):
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
+    def _dt_to_iso(value):
+        if value is None:
+            return None
+        if hasattr(value, "isoformat"):
+            return value.isoformat()
+        return value
+
+    def _register_home_api_routes(app: FastAPI):
+        @app.get("/api/home/highlights")
+        async def get_home_highlights(request: Request, window_days: int = 7):
+            _require_auth(request)
+
+            # Defensive clamping; keeps queries bounded.
+            try:
+                window_days_int = int(window_days)
+            except Exception:
+                window_days_int = 7
+            window_days_int = max(1, min(30, window_days_int))
+
+            from db import get_connection
+
+            # Defaults; any optional sections can remain null without breaking the UI.
+            payload = {
+                "window_days": window_days_int,
+                "current": {"new_events": 0, "open_events": 0, "closed_events": 0},
+                "previous": {"new_events": 0, "open_events": 0, "closed_events": 0},
+                "delta": {
+                    "new_events_pct": None,
+                    "open_events_pct": None,
+                    "closed_events_pct": None,
+                },
+                "top_categories": [],
+                "top_districts": [],
+                "top_services": [],
+            }
+
+            try:
+                with get_connection() as conn:
+                    with conn.cursor() as cur:
+                        # Current window: [now-window_days, now)
+                        # Previous window: [now-2*window_days, now-window_days)
+                        cur.execute(
+                            """
+                            WITH bounds AS (
+                                SELECT
+                                    now() AS now_ts,
+                                    now() - (%s || ' days')::interval AS cur_start,
+                                    now() - ((%s * 2) || ' days')::interval AS prev_start
+                            )
+                            SELECT
+                                COUNT(*) FILTER (
+                                    WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
+                                ) AS cur_new_events,
+                                COUNT(*) FILTER (
+                                    WHERE requested_at >= b.cur_start AND requested_at < b.now_ts AND lower(coalesce(status,'')) = 'open'
+                                ) AS cur_open_events,
+                                COUNT(*) FILTER (
+                                    WHERE requested_at >= b.cur_start AND requested_at < b.now_ts AND lower(coalesce(status,'')) = 'closed'
+                                ) AS cur_closed_events,
+                                COUNT(*) FILTER (
+                                    WHERE requested_at >= b.prev_start AND requested_at < b.cur_start
+                                ) AS prev_new_events,
+                                COUNT(*) FILTER (
+                                    WHERE requested_at >= b.prev_start AND requested_at < b.cur_start AND lower(coalesce(status,'')) = 'open'
+                                ) AS prev_open_events,
+                                COUNT(*) FILTER (
+                                    WHERE requested_at >= b.prev_start AND requested_at < b.cur_start AND lower(coalesce(status,'')) = 'closed'
+                                ) AS prev_closed_events
+                            FROM public.v_bike_events, bounds b;
+                            """,
+                            (window_days_int, window_days_int),
+                        )
+                        row = cur.fetchone() or (0, 0, 0, 0, 0, 0)
+                        (
+                            cur_new,
+                            cur_open,
+                            cur_closed,
+                            prev_new,
+                            prev_open,
+                            prev_closed,
+                        ) = row
+
+                        payload["current"] = {
+                            "new_events": int(cur_new or 0),
+                            "open_events": int(cur_open or 0),
+                            "closed_events": int(cur_closed or 0),
+                        }
+                        payload["previous"] = {
+                            "new_events": int(prev_new or 0),
+                            "open_events": int(prev_open or 0),
+                            "closed_events": int(prev_closed or 0),
+                        }
+
+                        def pct(cur_val: int, prev_val: int):
+                            if not prev_val:
+                                return None
+                            return (float(cur_val) - float(prev_val)) / float(prev_val) * 100.0
+
+                        payload["delta"] = {
+                            "new_events_pct": pct(
+                                payload["current"]["new_events"],
+                                payload["previous"]["new_events"],
+                            ),
+                            "open_events_pct": pct(
+                                payload["current"]["open_events"],
+                                payload["previous"]["open_events"],
+                            ),
+                            "closed_events_pct": pct(
+                                payload["current"]["closed_events"],
+                                payload["previous"]["closed_events"],
+                            ),
+                        }
+
+                        cur.execute(
+                            """
+                            WITH bounds AS (
+                                SELECT
+                                    now() AS now_ts,
+                                    now() - (%s || ' days')::interval AS cur_start
+                            )
+                            SELECT
+                                coalesce(nullif(btrim(bike_issue_category::text), ''), 'Unknown') AS category,
+                                COUNT(*) AS count
+                            FROM public.v_bike_events, bounds b
+                            WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
+                            GROUP BY 1
+                            ORDER BY COUNT(*) DESC
+                            LIMIT 5;
+                            """,
+                            (window_days_int,),
+                        )
+                        payload["top_categories"] = [
+                            {"category": r[0], "count": int(r[1] or 0)}
+                            for r in (cur.fetchall() or [])
+                        ]
+
+                        cur.execute(
+                            """
+                            WITH bounds AS (
+                                SELECT
+                                    now() AS now_ts,
+                                    now() - (%s || ' days')::interval AS cur_start
+                            )
+                            SELECT
+                                coalesce(nullif(btrim(district::text), ''), 'Unknown') AS district,
+                                COUNT(*) AS count
+                            FROM public.v_bike_events, bounds b
+                            WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
+                            GROUP BY 1
+                            ORDER BY COUNT(*) DESC
+                            LIMIT 5;
+                            """,
+                            (window_days_int,),
+                        )
+                        payload["top_districts"] = [
+                            {"district": r[0], "count": int(r[1] or 0)}
+                            for r in (cur.fetchall() or [])
+                        ]
+
+                with get_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            WITH bounds AS (
+                                SELECT
+                                    now() AS now_ts,
+                                    now() - (%s || ' days')::interval AS cur_start
+                            )
+                            SELECT
+                                coalesce(nullif(btrim(service_name::text), ''), 'Unknown') AS service_name,
+                                COUNT(*) AS count
+                            FROM public.v_bike_events, bounds b
+                            WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
+                            GROUP BY 1
+                            ORDER BY COUNT(*) DESC
+                            LIMIT 5;
+                            """,
+                            (window_days_int,),
+                        )
+                        payload["top_services"] = [
+                            {"service_name": r[0], "count": int(r[1] or 0)}
+                            for r in (cur.fetchall() or [])
+                        ]
+
+                return payload
+
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+        @app.get("/api/home/recent")
+        async def get_home_recent(
+            request: Request, window_days: int = 7, limit: int = 500
+        ):
+            _require_auth(request)
+
+            try:
+                window_days_int = int(window_days)
+            except Exception:
+                window_days_int = 7
+            window_days_int = max(1, min(30, window_days_int))
+
+            try:
+                limit_int = int(limit)
+            except Exception:
+                limit_int = 500
+            limit_int = max(1, min(5000, limit_int))
+
+            from db import get_connection
+
+            try:
+                with get_connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            WITH bounds AS (
+                                SELECT
+                                    now() AS now_ts,
+                                    now() - (%s || ' days')::interval AS cur_start
+                            )
+                            SELECT
+                                service_request_id,
+                                requested_at,
+                                status,
+                                district,
+                                title,
+                                bike_issue_category,
+                                bike_issue_category_emoji,
+                                bike_issue_emoji,
+                                lat,
+                                lon,
+                                year,
+                                sequence_number
+                            FROM public.v_bike_events, bounds b
+                            WHERE requested_at >= b.cur_start AND requested_at < b.now_ts
+                            ORDER BY requested_at DESC
+                            LIMIT %s;
+                            """,
+                            (window_days_int, limit_int),
+                        )
+                        columns = [desc[0] for desc in cur.description]
+                        results = cur.fetchall()
+                        rows = [dict(zip(columns, row)) for row in results]
+                        for r in rows:
+                            if r.get("requested_at"):
+                                r["requested_at"] = r["requested_at"].isoformat()
+
+                        return {
+                            "window_days": window_days_int,
+                            "limit": limit_int,
+                            "count": len(rows),
+                            "data": rows,
+                        }
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+    if test_mode:
+        app = FastAPI(
+            title="Vanna AI Events Explorer (test)",
+            description="Test-mode FastAPI app (skips env validation and LLM init).",
+            version="test",
+        )
+        _register_home_api_routes(app)
+        return app
 
     # Validate environment
     validate_env_vars()
@@ -439,10 +712,6 @@ def create_app():
     )
 
     # Create FastAPI app
-    from fastapi import FastAPI, Request
-    from fastapi.responses import HTMLResponse, JSONResponse
-    from fastapi.staticfiles import StaticFiles
-
     app = FastAPI(
         title="Vanna AI Events Explorer",
         description="Natural language interface to query the public.v_bike_events view",
@@ -675,6 +944,9 @@ def create_app():
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
+    # ── Home API routes ──
+    _register_home_api_routes(app)
+
     # ── Home page with login + chat UI ──
     @app.get("/", response_class=HTMLResponse)
     async def home(request: Request):
@@ -837,6 +1109,20 @@ def create_app():
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vanna AI - Events Explorer</title>
     __COMPONENT_SCRIPT__
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    />
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1128,6 +1414,318 @@ def create_app():
             width: 100%;
         }
 
+        /* ── Home view ── */
+        .home-wrapper {
+            width: 100%;
+            max-width: 1100px;
+            height: 100%;
+            overflow: auto;
+            padding-right: 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .home-header h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            margin-bottom: 4px;
+        }
+
+        .home-header p {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .home-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .home-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px 14px 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .home-card h3 {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .home-card.metric {
+            text-align: center;
+        }
+
+        .home-metric-value {
+            font-size: 30px;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+        }
+
+        .home-delta {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .home-delta.neutral {
+            border-color: var(--border);
+            background: var(--bg);
+            color: var(--muted);
+        }
+
+        .home-delta.pos-low {
+            border-color: rgba(16, 185, 129, 0.35);
+            background: rgba(16, 185, 129, 0.08);
+            color: #065f46;
+        }
+
+        .home-delta.pos-med {
+            border-color: rgba(16, 185, 129, 0.55);
+            background: rgba(16, 185, 129, 0.14);
+            color: #065f46;
+        }
+
+        .home-delta.pos-high {
+            border-color: rgba(16, 185, 129, 0.75);
+            background: rgba(16, 185, 129, 0.22);
+            color: #064e3b;
+        }
+
+        .home-delta.neg-low {
+            border-color: rgba(239, 68, 68, 0.35);
+            background: rgba(239, 68, 68, 0.08);
+            color: #991b1b;
+        }
+
+        .home-delta.neg-med {
+            border-color: rgba(239, 68, 68, 0.55);
+            background: rgba(239, 68, 68, 0.14);
+            color: #991b1b;
+        }
+
+        .home-delta.neg-high {
+            border-color: rgba(239, 68, 68, 0.75);
+            background: rgba(239, 68, 68, 0.22);
+            color: #7f1d1d;
+        }
+
+        .home-submetrics {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .home-submetric {
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            padding: 10px 10px 9px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .home-submetric .k {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 900;
+            color: var(--muted);
+        }
+
+        .home-submetric .v {
+            font-size: 16px;
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .home-toplist {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .home-topitem {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .home-topitem .label {
+            color: var(--text);
+            font-weight: 600;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .home-topitem .count {
+            color: var(--muted);
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .home-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .home-section-title {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+
+        .home-map {
+            width: 100%;
+            height: 440px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            background: var(--panel);
+        }
+
+        .home-emoji-marker {
+            width: 28px;
+            height: 28px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-size: 16px;
+            font-weight: 900;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.18);
+            user-select: none;
+        }
+
+        .leaflet-tooltip.home-tooltip {
+            border-radius: 12px;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+            padding: 10px 10px 9px;
+            background: rgba(255, 255, 255, 0.98);
+            color: #0f172a;
+            font-family: "Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+        }
+
+        .leaflet-tooltip.home-tooltip .t-head {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 800;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .leaflet-tooltip.home-tooltip .t-desc {
+            font-size: 12px;
+            color: #475569;
+            margin-bottom: 6px;
+            max-width: 260px;
+        }
+
+        .leaflet-tooltip.home-tooltip .t-hint {
+            font-size: 11px;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .home-note {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .home-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .home-feed-item {
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            cursor: pointer;
+            transition: transform 120ms ease, border-color 120ms ease;
+        }
+
+        .home-feed-item.status-open {
+            background: rgba(16, 185, 129, 0.08);
+            border-color: rgba(16, 185, 129, 0.22);
+        }
+
+        .home-feed-item.status-closed {
+            background: rgba(239, 68, 68, 0.07);
+            border-color: rgba(239, 68, 68, 0.20);
+        }
+
+        .home-feed-item:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .home-feed-title {
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .home-feed-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* Modal: uses the Bike Events dashboard modal design (Tailwind CSS in a shadow root). */
+
+        .home-loading {
+            color: var(--muted);
+            font-size: 13px;
+            padding: 10px 2px;
+        }
+
+        .home-sidebar-note {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.4;
+        }
+
+        @media (max-width: 920px) {
+            .home-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         vanna-chat {
             width: 100%;
             height: 100%;
@@ -1154,6 +1752,10 @@ def create_app():
             .main {
                 padding: 24px 16px 40px;
             }
+
+            .home-map {
+                height: 360px;
+            }
         }
     </style>
 </head>
@@ -1173,10 +1775,18 @@ def create_app():
                     <button class="btn ghost" id="sidebar-new-chat">New chat</button>
                 </div>
                 <div class="sidebar-tabs">
-                    <button class="sidebar-tab active" id="tab-chats" type="button">Chats</button>
+                    <button class="sidebar-tab active" id="tab-home" type="button">Home</button>
+                    <button class="sidebar-tab" id="tab-chats" type="button">Chats</button>
                     <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
                 </div>
-                <div class="sidebar-list" id="conv-list"></div>
+                <div class="sidebar-list" id="home-list">
+                    <div class="home-sidebar-note">
+                        Weekly highlights for Cologne bike-related reports.
+                        <br><br>
+                        Use the tabs to jump into Chats or the Bike Events dashboard.
+                    </div>
+                </div>
+                <div class="sidebar-list" id="conv-list" style="display: none;"></div>
                 <div class="sidebar-list" id="dashboard-list" style="display: none;">
                     <div class="dashboard-card" data-dashboard="bike-events">
                         <div class="dashboard-icon">🚴</div>
@@ -1204,13 +1814,21 @@ def create_app():
     let currentUser = null;
     let currentConvId = null;
     let chatPollTimer = null;
-    let currentView = 'chat';
+    let currentView = 'home';
     let dashboardRoot = null;
+    let homeMap = null;
+    let homeCluster = null;
+    let homeAbort = null;
+    let homeModalHost = null;
+    let homeModalEscHandler = null;
+    let bikeEventsCssText = null;
 
     const elLoggedIn = document.getElementById('logged-in');
     const elMain = document.getElementById('main');
+    const elHomeList = document.getElementById('home-list');
     const elConvList = document.getElementById('conv-list');
     const elDashboardList = document.getElementById('dashboard-list');
+    const elTabHome = document.getElementById('tab-home');
     const elTabChats = document.getElementById('tab-chats');
     const elTabDashboards = document.getElementById('tab-dashboards');
 
@@ -1219,17 +1837,35 @@ def create_app():
     }
 
     function setTab(tab) {
-        if (tab === 'dashboards') {
+        if (tab === 'home') {
+            elTabHome.classList.add('active');
+            elTabChats.classList.remove('active');
+            elTabDashboards.classList.remove('active');
+            elHomeList.style.display = 'flex';
+            elDashboardList.style.display = 'none';
+            elConvList.style.display = 'none';
+        } else if (tab === 'dashboards') {
+            elTabHome.classList.remove('active');
             elTabDashboards.classList.add('active');
             elTabChats.classList.remove('active');
+            elTabHome.classList.remove('active');
             elDashboardList.style.display = 'flex';
             elConvList.style.display = 'none';
+            elHomeList.style.display = 'none';
         } else {
+            elTabHome.classList.remove('active');
             elTabChats.classList.add('active');
             elTabDashboards.classList.remove('active');
+            elTabHome.classList.remove('active');
             elConvList.style.display = 'flex';
             elDashboardList.style.display = 'none';
+            elHomeList.style.display = 'none';
         }
+    }
+
+    function stopChatPolling() {
+        if (chatPollTimer) clearInterval(chatPollTimer);
+        chatPollTimer = null;
     }
 
     // ── Auth ──
@@ -1238,7 +1874,7 @@ def create_app():
             const r = await fetch('/api/auth/me', { credentials: 'include', cache: 'no-store' });
             if (r.ok) {
                 currentUser = await r.json();
-                await showChatView();
+                await showHomeView();
             } else {
                 window.location.href = '/';
             }
@@ -1250,22 +1886,193 @@ def create_app():
     async function showChatView() {
         setLoggedIn();
         setTab('chats');
+        stopChatPolling();
         const convs = await loadConversations();
-        if (convs.length) {
-            await switchConv(convs[0].id, { skipListReload: true });
-            await loadConversations();
+        const targetId = currentConvId || (convs.length ? convs[0].id : null);
+        if (targetId) {
+            await switchConv(targetId, { skipListReload: true });
         } else {
             await newChat();
         }
-        if (chatPollTimer) clearInterval(chatPollTimer);
+        await loadConversations();
         chatPollTimer = setInterval(loadConversations, 5000);
+    }
+
+    function destroyHomeMap() {
+        if (homeMap) {
+            try {
+                homeMap.off();
+                homeMap.remove();
+            } catch(e) {}
+            homeMap = null;
+            homeCluster = null;
+        }
+    }
+
+    function closeHomeModal() {
+        if (!homeModalHost) return;
+        homeModalHost.style.display = 'none';
+        try {
+            const root = homeModalHost.shadowRoot;
+            const panel = root && root.getElementById('home-dashboard-modal-panel');
+            if (panel) panel.innerHTML = '';
+        } catch(e) {}
+        if (homeModalEscHandler) {
+            document.removeEventListener('keydown', homeModalEscHandler);
+            homeModalEscHandler = null;
+        }
+    }
+
+    async function ensureBikeEventsCssLoaded() {
+        if (bikeEventsCssText) return bikeEventsCssText;
+        const r = await fetch('/dashboards/bike-events/dist/bike-events.css', { credentials: 'include' });
+        if (!r.ok) throw new Error('Failed to load dashboard CSS');
+        bikeEventsCssText = await r.text();
+        return bikeEventsCssText;
+    }
+
+    async function ensureHomeModal() {
+        if (homeModalHost) return homeModalHost;
+        const host = document.createElement('div');
+        host.id = 'home-dashboard-modal-host';
+        host.style.position = 'fixed';
+        host.style.inset = '0';
+        host.style.zIndex = '9999';
+        host.style.display = 'none';
+        host.style.pointerEvents = 'auto';
+        const shadow = host.attachShadow({ mode: 'open' });
+
+        const cssText = await ensureBikeEventsCssLoaded();
+        const style = document.createElement('style');
+        style.textContent = cssText;
+
+        // Basic host reset inside shadow root so Tailwind styles apply predictably.
+        const base = document.createElement('style');
+        base.textContent = `
+            :host { all: initial; }
+            * { box-sizing: border-box; }
+        `;
+
+        const wrap = document.createElement('div');
+        wrap.id = 'home-dashboard-modal-wrap';
+        wrap.innerHTML = `
+            <div class="relative z-[9999]">
+                <div id="home-dashboard-modal-backdrop" class="fixed inset-0 bg-black/30 backdrop-blur-sm"></div>
+                <div class="fixed inset-0 flex items-center justify-center p-4">
+                    <div id="home-dashboard-modal-panel" class="max-w-2xl w-full bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-h-[90vh] overflow-y-auto"></div>
+                </div>
+            </div>
+        `;
+
+        shadow.appendChild(base);
+        shadow.appendChild(style);
+        shadow.appendChild(wrap);
+
+        shadow.getElementById('home-dashboard-modal-backdrop')?.addEventListener('click', closeHomeModal);
+
+        document.body.appendChild(host);
+        homeModalHost = host;
+        return homeModalHost;
+    }
+
+    function destroyHomeView() {
+        if (homeAbort) {
+            try { homeAbort.abort(); } catch(e) {}
+            homeAbort = null;
+        }
+        closeHomeModal();
+        destroyHomeMap();
+    }
+
+    function clearDashboardSelection() {
+        document.querySelectorAll('.dashboard-card').forEach(c => c.classList.remove('active'));
+    }
+
+    function selectDashboardCard(dashboardId) {
+        clearDashboardSelection();
+        const card = document.querySelector('.dashboard-card[data-dashboard="' + dashboardId + '"]');
+        if (card) card.classList.add('active');
+    }
+
+    async function showHomeView() {
+        currentView = 'home';
+        setLoggedIn();
+        setTab('home');
+        stopChatPolling();
+
+        if (dashboardRoot) {
+            dashboardRoot.unmount();
+            dashboardRoot = null;
+        }
+        if (elMain) {
+            elMain.classList.remove('dashboard-mode');
+        }
+        clearDashboardSelection();
+
+        const wrapper = document.getElementById('chat-wrapper');
+        destroyHomeView();
+        wrapper.className = 'home-wrapper';
+        wrapper.innerHTML = `
+            <div class="home-header">
+                <h1>What happened recently in Cologne bike-related reports?</h1>
+                <p>Rolling 7 days versus previous 7 days, plus a map and newest events.</p>
+            </div>
+            <div class="home-grid" id="home-highlights">
+                <div class="home-card"><h3>New bike-related reports (7d)</h3><div class="home-loading">Loading...</div></div>
+                <div class="home-card"><h3>Top issue categories (7d)</h3><div class="home-loading">Loading...</div></div>
+                <div class="home-card"><h3>Top districts (7d)</h3><div class="home-loading">Loading...</div></div>
+                <div class="home-card"><h3>Top services (7d)</h3><div class="home-loading">Loading...</div></div>
+            </div>
+            <div class="home-section">
+                <div class="home-section-title">Map (last 7 days)</div>
+                <div class="home-note" id="home-map-note"></div>
+                <div id="home-map" class="home-map"></div>
+            </div>
+            <div class="home-section">
+                <div class="home-section-title">Newest events</div>
+                <div class="home-feed" id="home-feed"><div class="home-loading">Loading...</div></div>
+            </div>
+        `;
+
+        homeAbort = new AbortController();
+        const signal = homeAbort.signal;
+        try {
+            const [highR, recentR] = await Promise.all([
+                fetch('/api/home/highlights?window_days=7', { credentials: 'include', signal }),
+                fetch('/api/home/recent?window_days=7&limit=2000', { credentials: 'include', signal }),
+            ]);
+            if (!highR.ok) throw new Error('highlights failed');
+            if (!recentR.ok) throw new Error('recent failed');
+
+            const highlights = await highR.json();
+            const recent = await recentR.json();
+
+            renderHomeHighlights(highlights);
+            renderHomeFeed(recent.data || []);
+            initHomeMap(recent.data || []);
+
+            // If fewer than 20 events exist in the last 7d, backfill the feed with a wider window.
+            if ((recent.data || []).length < 20) {
+                try {
+                    const r2 = await fetch('/api/home/recent?window_days=365&limit=20', { credentials: 'include', signal });
+                    if (r2.ok) {
+                        const more = await r2.json();
+                        renderHomeFeed(more.data || []);
+                    }
+                } catch(e) {}
+            }
+        } catch (e) {
+            const el = document.getElementById('home-feed');
+            if (el) el.innerHTML = '<div class="home-loading">Failed to load Home data.</div>';
+        }
     }
 
     async function doLogout() {
         await fetch('/api/auth/logout', {method: 'POST', credentials: 'include'});
         currentUser = null;
         currentConvId = null;
-        if (chatPollTimer) clearInterval(chatPollTimer);
+        stopChatPolling();
+        destroyHomeView();
         window.location.href = '/';
     }
 
@@ -1318,6 +2125,7 @@ def create_app():
     async function switchConv(convId, opts = {}) {
         currentConvId = convId;
         currentView = 'chat';
+        destroyHomeView();
         let messages = [];
         try {
             const r = await fetch('/api/conversations/' + convId, { credentials: 'include' });
@@ -1336,9 +2144,13 @@ def create_app():
 
     async function newChat() {
         currentConvId = await createConversationId();
+        currentView = 'chat';
+        destroyHomeView();
         setTab('chats');
         mountChat(currentConvId);
-        loadConversations();
+        await loadConversations();
+        stopChatPolling();
+        chatPollTimer = setInterval(loadConversations, 5000);
     }
 
     async function createConversationId() {
@@ -1368,6 +2180,7 @@ def create_app():
     // ── Mount vanna-chat ──
     function mountChat(convId) {
         const wrapper = document.getElementById('chat-wrapper');
+        destroyHomeView();
         if (dashboardRoot) {
             dashboardRoot.unmount();
             dashboardRoot = null;
@@ -1376,6 +2189,7 @@ def create_app():
         if (elMain) {
             elMain.classList.remove('dashboard-mode');
         }
+        wrapper.className = 'chat-wrapper';
         wrapper.innerHTML =
             '<vanna-chat id="vanna-chat"' +
             ' sse-endpoint="/api/vanna/v2/chat_sse"' +
@@ -1434,6 +2248,8 @@ def create_app():
 
     async function loadDashboard(dashboardId) {
         currentView = 'dashboard';
+        destroyHomeView();
+        stopChatPolling();
         setTab('dashboards');
         if (elMain) {
             elMain.classList.add('dashboard-mode');
@@ -1445,12 +2261,14 @@ def create_app():
         }
 
         const wrapper = document.getElementById('chat-wrapper');
+        wrapper.className = 'chat-wrapper';
         wrapper.innerHTML = '<div id="dashboard-root"></div>';
 
         if (dashboardId === 'bike-events') {
             try {
                 const module = await import('/dashboards/bike-events/dist/bike-events.js');
                 dashboardRoot = module.renderBikeEventsDashboard(document.getElementById('dashboard-root'));
+                selectDashboardCard('bike-events');
             } catch (error) {
                 console.error('Failed to load dashboard:', error);
                 wrapper.innerHTML = '<div style="padding: 20px; text-align: center;"><p style="color: red;">Failed to load dashboard. Please ensure it has been built.</p></div>';
@@ -1475,18 +2293,336 @@ def create_app():
         return d.toLocaleDateString();
     }
 
+    // ── Home rendering ──
+    function formatPct(pct) {
+        if (pct === null || pct === undefined || Number.isNaN(pct)) return 'n/a';
+        const sign = pct > 0 ? '+' : '';
+        return sign + pct.toFixed(0) + '%';
+    }
+
+    function deltaClass(pct) {
+        if (pct === null || pct === undefined || Number.isNaN(pct)) return 'neutral';
+        const v = Number(pct);
+        if (v === 0) return 'neutral';
+        if (v > 0) {
+            if (v >= 50) return 'pos-high';
+            if (v >= 20) return 'pos-med';
+            return 'pos-low';
+        }
+        // Negative change
+        if (v <= -50) return 'neg-high';
+        if (v <= -20) return 'neg-med';
+        return 'neg-low';
+    }
+
+    function renderHomeHighlights(h) {
+        const el = document.getElementById('home-highlights');
+        if (!el) return;
+
+        const cur = h.current || {};
+        const delta = h.delta || {};
+        const topCats = h.top_categories || [];
+        const topDists = h.top_districts || [];
+        const topServices = h.top_services || [];
+
+        const newPct = delta.new_events_pct;
+        const newPctClass = deltaClass(newPct);
+
+        const card1 = `
+            <div class="home-card metric">
+                <h3>New bike-related reports (${h.window_days || 7}d)</h3>
+                <div class="home-metric-value">${Number(cur.new_events || 0).toLocaleString()}</div>
+                <div style="margin-top:10px;">
+                    <span class="home-delta ${newPctClass}">${formatPct(newPct)} vs prev ${h.window_days || 7}d</span>
+                </div>
+                <div class="home-note" style="margin-top:10px;">
+                    Previous = the prior rolling ${h.window_days || 7} days (days ${Number(h.window_days||7)+1}-${Number(h.window_days||7)*2} ago).
+                </div>
+                <div class="home-submetrics">
+                    <div class="home-submetric">
+                        <div class="k">Open</div>
+                        <div class="v">${Number(cur.open_events||0).toLocaleString()}</div>
+                    </div>
+                    <div class="home-submetric">
+                        <div class="k">Closed</div>
+                        <div class="v">${Number(cur.closed_events||0).toLocaleString()}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const card2 = `
+            <div class="home-card">
+                <h3>Top issue categories (${h.window_days || 7}d)</h3>
+                <div class="home-toplist">
+                    ${topCats.length ? topCats.map(it => `
+                        <div class="home-topitem">
+                            <div class="label">${escapeHtml(it.category || 'Unknown')}</div>
+                            <div class="count">${Number(it.count || 0).toLocaleString()}</div>
+                        </div>
+                    `).join('') : '<div class="home-loading">No category data in this window.</div>'}
+                </div>
+            </div>
+        `;
+
+        const card3 = `
+            <div class="home-card">
+                <h3>Top districts (${h.window_days || 7}d)</h3>
+                <div class="home-toplist">
+                    ${topDists.length ? topDists.map(it => `
+                        <div class="home-topitem">
+                            <div class="label">${escapeHtml(it.district || 'Unknown')}</div>
+                            <div class="count">${Number(it.count || 0).toLocaleString()}</div>
+                        </div>
+                    `).join('') : '<div class="home-loading">No district data in this window.</div>'}
+                </div>
+            </div>
+        `;
+
+        const card4 = `
+            <div class="home-card">
+                <h3>Top services (${h.window_days || 7}d)</h3>
+                <div class="home-toplist">
+                    ${topServices.length ? topServices.map(it => `
+                        <div class="home-topitem">
+                            <div class="label">${escapeHtml(it.service_name || 'Unknown')}</div>
+                            <div class="count">${Number(it.count || 0).toLocaleString()}</div>
+                        </div>
+                    `).join('') : '<div class="home-loading">No service data in this window.</div>'}
+                </div>
+            </div>
+        `;
+
+        el.innerHTML = card1 + card2 + card3 + card4;
+    }
+
+    function sagsUnsUrl(ev) {
+        const seq = ev.sequence_number;
+        const year = ev.year;
+        if (!seq || !year) return null;
+        return 'https://sags-uns.stadt-koeln.de/requests/' + String(seq) + '-' + String(year);
+    }
+
+    function normalizeStatus(status) {
+        const s = String(status || '').toLowerCase();
+        if (s === 'open' || s.includes('offen')) return 'open';
+        if (s === 'closed' || s.includes('geschlossen') || s.includes('erledigt')) return 'closed';
+        return 'unknown';
+    }
+
+    async function openHomeEventModal(summary) {
+        const host = await ensureHomeModal();
+        host.style.display = 'block';
+        const modal = host.shadowRoot && host.shadowRoot.getElementById('home-dashboard-modal-panel');
+        if (!modal) return;
+
+        modal.innerHTML = '<div class="text-center text-gray-600 dark:text-gray-400">Loading event...</div>';
+
+        homeModalEscHandler = (e) => {
+            if (e.key === 'Escape') closeHomeModal();
+        };
+        document.addEventListener('keydown', homeModalEscHandler);
+
+        let details = null;
+        try {
+            if (summary && summary.service_request_id) {
+                const r = await fetch('/api/dashboards/bike-events/event/' + encodeURIComponent(summary.service_request_id), { credentials: 'include' });
+                if (r.ok) details = await r.json();
+            }
+        } catch(e) {}
+        const ev = details || summary || {};
+
+        // Copy the dashboard modal structure/classes (see Bike Events dashboard).
+        const mediaUrl = ev.media_path ? ('https://sags-uns.stadt-koeln.de/system/files/' + ev.media_path) : null;
+        const sourceUrl = sagsUnsUrl(ev) || sagsUnsUrl(summary);
+        const status = String(ev.status || '').toLowerCase() === 'open' ? 'open' : 'closed';
+        const reported = ev.requested_at ? new Date(ev.requested_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'n/a';
+
+        modal.innerHTML = `
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                    <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">${escapeHtml(ev.title || 'Bike event')}</div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-2xl">${escapeHtml(String(ev.bike_issue_emoji || '🚴').trim())}</span>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold ${status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'}">${escapeHtml(String(ev.status || '').toUpperCase() || 'N/A')}</span>
+                    </div>
+                </div>
+                <button id="home-dashboard-modal-close-x" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200" type="button" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            ${mediaUrl ? `<div class="mb-6"><img src="${mediaUrl}" alt="${escapeHtml(ev.title || '')}" class="w-full h-64 object-cover rounded-lg shadow-md" onerror="this.style.display='none'"></div>` : ''}
+            <div class="grid grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Service ID</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(ev.service_request_id || '')}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Reported</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(reported)}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Status</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100 capitalize">${escapeHtml(ev.status || '')}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Backlog</p>
+                    <p class="text-sm text-gray-900 dark:text-gray-100">${escapeHtml(ev.backlog_bucket || '')}</p>
+                </div>
+            </div>
+            ${ev.description ? `
+                <div class="mb-6">
+                    <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">${escapeHtml(ev.description)}</p>
+                </div>
+            ` : ''}
+            <div class="mb-6">
+                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Location</h3>
+                <p class="text-sm text-gray-900 dark:text-gray-100 mb-2">${escapeHtml(ev.address_string || '')}</p>
+                <div class="grid grid-cols-3 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                    ${ev.district ? `<div>District: ${escapeHtml(ev.district)}</div>` : ''}
+                    ${ev.zip_code ? `<div>ZIP: ${escapeHtml(ev.zip_code)}</div>` : ''}
+                    ${ev.street ? `<div>Street: ${escapeHtml(ev.street)}</div>` : ''}
+                </div>
+                ${ev.cat_path ? `<p class="text-xs text-gray-500 dark:text-gray-500 mt-2">${escapeHtml(ev.cat_path)}</p>` : ''}
+            </div>
+            <div class="flex space-x-3">
+                ${sourceUrl ? `<a href="${sourceUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md text-center transition-colors">View on Cologne Website →</a>` : ''}
+                <button id="home-dashboard-modal-close" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors" type="button">Close</button>
+            </div>
+        `;
+
+        modal.querySelector('#home-dashboard-modal-close')?.addEventListener('click', closeHomeModal);
+        modal.querySelector('#home-dashboard-modal-close-x')?.addEventListener('click', closeHomeModal);
+    }
+
+    function renderHomeFeed(events) {
+        const el = document.getElementById('home-feed');
+        if (!el) return;
+        const items = (events || []).slice(0, 20);
+        if (!items.length) {
+            el.innerHTML = '<div class="home-loading">No events found.</div>';
+            return;
+        }
+        el.innerHTML = items.map((ev, idx) => {
+            const title = escapeHtml(ev.title || ev.bike_issue_category || 'Bike event');
+            const district = escapeHtml(ev.district || 'Unknown district');
+            const cat = escapeHtml(ev.bike_issue_category || 'Unknown category');
+            const statusClass = normalizeStatus(ev.status);
+            const when = ev.requested_at ? new Date(ev.requested_at).toLocaleString() : 'n/a';
+            return `
+                <div class="home-feed-item status-${statusClass}" data-idx="${idx}">
+                    <div class="home-feed-title">${title}</div>
+                    <div class="home-feed-meta">
+                        <div>${district} • ${cat}</div>
+                        <div>${when}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        el.onclick = (e) => {
+            const item = e.target.closest('.home-feed-item');
+            if (item) {
+                const idx = Number(item.dataset.idx);
+                openHomeEventModal(items[idx]);
+            }
+        };
+    }
+
+    function hashString(s) {
+        let h = 2166136261;
+        for (let i = 0; i < s.length; i++) {
+            h ^= s.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        return (h >>> 0);
+    }
+
+    function categoryColor(category) {
+        const palette = [
+            '#2563eb', '#16a34a', '#f97316', '#ef4444', '#0ea5e9',
+            '#a855f7', '#14b8a6', '#f59e0b', '#22c55e', '#e11d48'
+        ];
+        const key = String(category || 'unknown');
+        return palette[hashString(key) % palette.length];
+    }
+
+    function statusBorder(status) {
+        const s = String(status || '').toLowerCase();
+        if (s === 'open' || s.includes('offen')) return '#16a34a';
+        if (s === 'closed' || s.includes('geschlossen') || s.includes('erledigt')) return '#ef4444';
+        return '#64748b';
+    }
+
+    function initHomeMap(events) {
+        const mapEl = document.getElementById('home-map');
+        if (!mapEl || !window.L) return;
+        destroyHomeMap();
+
+        const all = (events || []).filter(e => typeof e.lat === 'number' && typeof e.lon === 'number');
+        const noteEl = document.getElementById('home-map-note');
+        let shown = all;
+        if (all.length > 1500) {
+            shown = all.slice(0, 1500);
+            if (noteEl) noteEl.textContent = 'Showing 1500 of ' + all.length.toLocaleString() + ' points (newest first).';
+        } else {
+            if (noteEl) noteEl.textContent = all.length ? '' : 'No mappable points in this window.';
+        }
+
+        homeMap = L.map('home-map', { zoomControl: true });
+        homeMap.setView([50.9375, 6.9603], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(homeMap);
+
+        if (L.markerClusterGroup) {
+            homeCluster = L.markerClusterGroup({ chunkedLoading: true });
+        } else {
+            homeCluster = L.layerGroup();
+        }
+
+        shown.forEach(ev => {
+            const border = statusBorder(ev.status);
+            const fill = categoryColor(ev.bike_issue_category);
+            const bg = 'rgba(255,255,255,0.92)';
+            const emoji = String(ev.bike_issue_emoji || '🚴').trim();
+            const icon = L.divIcon({
+                className: '',
+                html: '<div class="home-emoji-marker" style="background:' + bg + ';border:2px solid ' + border + ';box-shadow: 0 10px 22px rgba(15,23,42,0.18), 0 0 0 4px ' + fill + '20;">' + emoji + '</div>',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+            });
+            const m = L.marker([ev.lat, ev.lon], { icon });
+            const ttTitle = escapeHtml(ev.title || ev.bike_issue_category || 'Bike event');
+            const ttDesc = ev.description ? escapeHtml(String(ev.description).slice(0, 150) + (String(ev.description).length > 150 ? '...' : '')) : '';
+            const ttHtml =
+                '<div class="t-head"><span style="font-size:16px;line-height:1;">' + escapeHtml(emoji) + '</span><span>' + ttTitle + '</span></div>' +
+                (ttDesc ? '<div class="t-desc">' + ttDesc + '</div>' : '') +
+                '<div class="t-hint">Click for full details</div>';
+            m.bindTooltip(ttHtml, { direction: 'top', offset: [0, -18], opacity: 0.95, className: 'home-tooltip' });
+            m.on('click', () => openHomeEventModal(ev));
+            homeCluster.addLayer(m);
+        });
+        homeCluster.addTo(homeMap);
+    }
+
     // ── Events ──
     document.getElementById('logout-btn').addEventListener('click', doLogout);
     document.getElementById('sidebar-new-chat').addEventListener('click', newChat);
-    elTabChats.addEventListener('click', () => setTab('chats'));
-    elTabDashboards.addEventListener('click', () => setTab('dashboards'));
+    elTabHome.addEventListener('click', () => showHomeView());
+    elTabChats.addEventListener('click', () => showChatView());
+    elTabDashboards.addEventListener('click', () => loadDashboard('bike-events'));
     elDashboardList.addEventListener('click', (e) => {
         const card = e.target.closest('.dashboard-card');
         if (!card) return;
         const dashboardId = card.dataset.dashboard;
         loadDashboard(dashboardId);
-        document.querySelectorAll('.dashboard-card').forEach(c => c.classList.remove('active'));
-        card.classList.add('active');
+        selectDashboardCard(dashboardId);
     });
 
     // ── Init ──
@@ -1518,8 +2654,10 @@ def create_app():
     return app
 
 
-# Create the app instance
-app = create_app()
+# Create the app instance.
+# In test mode we skip env validation and LLM initialization so unit tests can run
+# without Supabase credentials or external services.
+app = create_app(test_mode=os.getenv("VANNA_TEST_MODE") == "1")
 
 
 if __name__ == "__main__":
