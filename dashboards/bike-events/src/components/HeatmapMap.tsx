@@ -1,31 +1,17 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet'
-import MarkerClusterGroup from 'react-leaflet-cluster'
-import { divIcon, type LatLngExpression } from 'leaflet'
-import type { BikeEvent, HeatmapSettings } from '@/types/bikeEvents'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { MapContainer, TileLayer } from 'react-leaflet'
+import type { LatLngExpression } from 'leaflet'
+import type { BikeEvent } from '@/types/bikeEvents'
 import HeatmapLayer from './HeatmapLayer'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { CategoryIcon, getCategoryIconMarkup } from '@/utils/categoryIcons'
+import { buildHeatmapGrid, clamp, percentileCount } from '@/utils/heatmapGrid'
 
 interface HeatmapMapProps {
   events: BikeEvent[]
-  onMarkerClick: (event: BikeEvent) => void
-  settings: HeatmapSettings
-}
-
-const CATEGORY_COLORS: Record<string, string> = {
-  'Oberflächenqualität / Schäden': '#8b5a2b',
-  'Hindernisse & Blockaden (inkl. Parken & Baustelle)': '#d97706',
-  'Müll / Scherben / Splitter (Sharp objects & debris)': '#65a30d',
-  'Markierungen & Beschilderung': '#dc2626',
-  'Ampeln & Signale (inkl. bike-specific Licht)': '#2563eb',
-  'Sicherheit & Komfort (Geometrie/Führung)': '#7c3aed',
-  'Vegetation & Sichtbehinderung': '#059669',
-  'Wasser / Eis / Entwässerung': '#0891b2',
-  'Other / Unklar': '#6b7280',
+  onReady?: (api: { panTo: (center: { lat: number; lon: number }, zoom?: number) => void }) => void
 }
 
 const HEATMAP_GRADIENT = {
@@ -35,18 +21,15 @@ const HEATMAP_GRADIENT = {
   0.9: '#ef4444',
 }
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+const DEFAULT_RADIUS = 28
+const DEFAULT_BLUR = 20
+const HOTSPOT_CELL_METERS = 250
+const HOTSPOT_ZOOM = 15
 
-const getWeight = (event: BikeEvent, weightBy: HeatmapSettings['weightBy']) => {
-  if (weightBy === 'count') return 1
-  if (weightBy === 'bike_confidence') {
-    return Number(event.bike_confidence ?? 0)
-  }
-  return Number(event.bike_issue_confidence ?? 0)
-}
-
-export default function HeatmapMap({ events, onMarkerClick, settings }: HeatmapMapProps) {
+export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
   const cologneCenter: LatLngExpression = [50.9375, 6.9603]
+  const mapRef = useRef<L.Map | null>(null)
+  const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -62,32 +45,32 @@ export default function HeatmapMap({ events, onMarkerClick, settings }: HeatmapM
     [events]
   )
 
-  const heatPoints = useMemo(() => {
-    return filteredEvents.map((event) => {
-      const weight = getWeight(event, settings.weightBy)
-      const normalized = settings.weightBy === 'count' ? 1 : clamp(weight, 0.1, 1)
-      return [event.lat, event.lon, normalized] as [number, number, number]
-    })
-  }, [filteredEvents, settings.weightBy])
+  const heatPoints = useMemo(
+    () => filteredEvents.map((event) => [event.lat, event.lon, 1] as [number, number, number]),
+    [filteredEvents]
+  )
 
-  const createClusterIcon = (event: BikeEvent) => {
-    const color = CATEGORY_COLORS[event.bike_issue_category] || CATEGORY_COLORS['Other / Unklar']
-    const borderColor = event.status === 'open' ? '#22c55e' : '#ef4444'
-    return divIcon({
-      html: `
-        <div class="custom-marker" style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor}; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
-          ${getCategoryIconMarkup(event.bike_issue_category, 'w-4 h-4 text-white')}
-        </div>
-      `,
-      className: '',
-      iconSize: [30, 30],
-      iconAnchor: [15, 30],
-      popupAnchor: [0, -30],
+  const maxIntensity = useMemo(() => {
+    const grid = buildHeatmapGrid(filteredEvents, HOTSPOT_CELL_METERS)
+    const counts = grid.map((cell) => cell.count)
+    const p95 = percentileCount(counts, 0.95)
+    return clamp(p95 || 3, 3, 50)
+  }, [filteredEvents])
+
+  useEffect(() => {
+    if (!onReady) return
+    if (!mapReady) return
+    if (!mapRef.current) return
+
+    onReady({
+      panTo: (center, zoom = HOTSPOT_ZOOM) => {
+        mapRef.current?.setView([center.lat, center.lon], zoom, { animate: true })
+      },
     })
-  }
+  }, [onReady, mapReady])
 
   return (
-    <div className="h-[420px] md:h-[620px] w-full rounded-lg overflow-hidden shadow-lg">
+    <div className="relative h-[420px] md:h-[620px] w-full rounded-lg overflow-hidden shadow-lg">
       <MapContainer
         center={cologneCenter}
         zoom={12}
@@ -95,55 +78,40 @@ export default function HeatmapMap({ events, onMarkerClick, settings }: HeatmapM
         maxZoom={18}
         className="h-full w-full"
         scrollWheelZoom={true}
+        whenReady={() => setMapReady(true)}
+        whenCreated={(map) => {
+          mapRef.current = map
+        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {settings.showHeatmap && heatPoints.length > 0 && (
+        {heatPoints.length > 0 && (
           <HeatmapLayer
             points={heatPoints}
-            radius={settings.radius}
-            blur={settings.blur}
-            max={settings.maxIntensity}
+            radius={DEFAULT_RADIUS}
+            blur={DEFAULT_BLUR}
+            max={maxIntensity}
             gradient={HEATMAP_GRADIENT}
           />
         )}
-
-        {settings.showClusters && (
-          <MarkerClusterGroup chunkedLoading maxClusterRadius={55} showCoverageOnHover={false}>
-            {filteredEvents.map((event) => (
-              <Marker
-                key={event.service_request_id}
-                position={[event.lat, event.lon]}
-                icon={createClusterIcon(event)}
-                eventHandlers={{
-                  click: () => onMarkerClick(event),
-                }}
-              >
-                <Tooltip direction="top" offset={[0, -18]} opacity={0.95}>
-                  <div className="text-sm max-w-xs">
-                    <div className="font-semibold mb-1 flex items-center gap-2">
-                      <CategoryIcon category={event.bike_issue_category} className="w-4 h-4" />
-                      <span>{event.title}</span>
-                    </div>
-                    {event.description && (
-                      <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">
-                        {event.description.slice(0, 150)}
-                        {event.description.length > 150 ? '...' : ''}
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-500 dark:text-gray-400 italic">
-                      Click for full details
-                    </div>
-                  </div>
-                </Tooltip>
-              </Marker>
-            ))}
-          </MarkerClusterGroup>
-        )}
       </MapContainer>
+
+      {/* On-map density legend overlay (no scrolling). */}
+      <div className="absolute left-4 bottom-4 z-[500] pointer-events-none">
+        <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur rounded-md shadow px-3 py-2">
+          <div className="text-[11px] font-semibold text-gray-700 dark:text-gray-200">
+            Density
+          </div>
+          <div className="mt-1 h-2 w-44 rounded-full bg-gradient-to-r from-sky-500 via-emerald-500 via-amber-500 to-red-500" />
+          <div className="mt-1 flex justify-between text-[10px] text-gray-500 dark:text-gray-400">
+            <span>Cool</span>
+            <span>Hot</span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
