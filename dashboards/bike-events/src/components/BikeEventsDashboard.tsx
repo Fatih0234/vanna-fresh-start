@@ -3,16 +3,14 @@ import type {
   BikeEvent,
   FilterState,
   DashboardId,
-  BacklogFilters,
 } from '../types/bikeEvents'
 import BikeEventsMap from './BikeEventsMap'
 import HeatmapMap from './HeatmapMap'
-import BacklogConfidenceMap from './BacklogConfidenceMap'
+import StreetHotspotsMap from './StreetHotspotsMap'
 import FilterPanel from './FilterPanel'
-import BacklogFiltersPanel from './BacklogFiltersPanel'
 import StatsSummary from './StatsSummary'
 import HeatmapSummary from './HeatmapSummary'
-import BacklogSummary from './BacklogSummary'
+import StreetHotspotsSummary from './StreetHotspotsSummary'
 import DashboardTabs from './DashboardTabs'
 import EventDetailsModal from './EventDetailsModal'
 
@@ -29,12 +27,10 @@ const DASHBOARD_TABS: Array<{ id: DashboardId; label: string; description: strin
   },
   {
     id: 'backlog',
-    label: 'Backlog & Confidence',
-    description: 'Surface backlog pressure with size-encoded markers and confidence filters.',
+    label: 'Street Hotspots',
+    description: 'Street-level hotspots sized by event volume and colored by open share.',
   },
 ]
-
-const DEFAULT_BACKLOG_BUCKETS: BacklogFilters['buckets'] = ['0–7d', '7–14d', '14–30d', '30d+', 'closed']
 
 export default function BikeEventsDashboard() {
   const [events, setEvents] = useState<BikeEvent[]>([])
@@ -48,13 +44,9 @@ export default function BikeEventsDashboard() {
     categories: [],
     zipCodes: [],
   })
-  const [backlogFilters, setBacklogFilters] = useState<BacklogFilters>({
-    buckets: DEFAULT_BACKLOG_BUCKETS,
-    confidenceMin: 0,
-    confidenceMax: 1,
-    confidenceMetric: 'bike_issue_confidence',
-  })
   const [selectedEvent, setSelectedEvent] = useState<BikeEvent | null>(null)
+  const [selectedStreet, setSelectedStreet] = useState<string | null>(null)
+  const [selectedStreetCenter, setSelectedStreetCenter] = useState<{ lat: number; lon: number } | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -115,16 +107,6 @@ export default function BikeEventsDashboard() {
     })
   }, [events, filters])
 
-  const backlogEvents = useMemo(() => {
-    return filteredEvents.filter((event) => {
-      if (!backlogFilters.buckets.includes(event.backlog_bucket)) return false
-      const confidenceValue = Number(event[backlogFilters.confidenceMetric] ?? 0)
-      if (confidenceValue < backlogFilters.confidenceMin) return false
-      if (confidenceValue > backlogFilters.confidenceMax) return false
-      return true
-    })
-  }, [filteredEvents, backlogFilters])
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -170,13 +152,6 @@ export default function BikeEventsDashboard() {
             allEvents={events}
             filteredEvents={filteredEvents}
           />
-          {activeDashboard === 'backlog' && (
-            <BacklogFiltersPanel
-              filters={backlogFilters}
-              onChange={setBacklogFilters}
-              events={filteredEvents}
-            />
-          )}
         </div>
 
         <div className="lg:col-span-4 px-6 py-6 overflow-y-auto space-y-8">
@@ -199,12 +174,24 @@ export default function BikeEventsDashboard() {
 
           {activeDashboard === 'backlog' && (
             <>
-              <BacklogConfidenceMap
-                events={backlogEvents}
-                onMarkerClick={setSelectedEvent}
-                filters={backlogFilters}
+              <StreetHotspotsMap
+                events={filteredEvents}
+                selectedStreet={selectedStreet}
+                selectedCenter={selectedStreetCenter}
+                onSelectStreet={(street, center) => {
+                  setSelectedStreet(street)
+                  setSelectedStreetCenter(center)
+                }}
               />
-              <BacklogSummary events={backlogEvents} filters={backlogFilters} />
+              <StreetHotspotsSummary
+                events={filteredEvents}
+                selectedStreet={selectedStreet}
+                onSelectStreet={(street, center) => {
+                  setSelectedStreet(street)
+                  setSelectedStreetCenter(center)
+                }}
+                onSelectEvent={setSelectedEvent}
+              />
             </>
           )}
         </div>
