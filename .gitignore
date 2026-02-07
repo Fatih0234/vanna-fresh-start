@@ -59,3 +59,7 @@ dashboards/*/dist/
 
 # Vanna generated data (query results, charts)
 vanna_data/
+
+# Local brand assets (the tracked versions live in app_assets/)
+concept4-civic_seal.png
+concept4-civic_seal.svg
