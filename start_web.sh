@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Quick start script for Vanna AI Web Server
+# Quick start script for RadBlick Web Server
 
 echo "=============================================="
-echo "Vanna AI Web Server - Quick Start"
+echo "RadBlick Web Server - Quick Start"
 echo "=============================================="
 echo ""
 
@@ -49,7 +49,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "✓ Starting Vanna AI Web Server..."
+echo "✓ Starting RadBlick Web Server..."
 echo ""
 echo "🌐 Server will be available at: http://localhost:8000"
 echo ""
