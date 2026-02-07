@@ -3,14 +3,12 @@ import type {
   BikeEvent,
   FilterState,
   DashboardId,
-  HeatmapSettings,
   BacklogFilters,
 } from '../types/bikeEvents'
 import BikeEventsMap from './BikeEventsMap'
 import HeatmapMap from './HeatmapMap'
 import BacklogConfidenceMap from './BacklogConfidenceMap'
 import FilterPanel from './FilterPanel'
-import HeatmapControls from './HeatmapControls'
 import BacklogFiltersPanel from './BacklogFiltersPanel'
 import StatsSummary from './StatsSummary'
 import HeatmapSummary from './HeatmapSummary'
@@ -49,14 +47,6 @@ export default function BikeEventsDashboard() {
     districts: [],
     categories: [],
     zipCodes: [],
-  })
-  const [heatmapSettings, setHeatmapSettings] = useState<HeatmapSettings>({
-    showHeatmap: true,
-    showClusters: true,
-    radius: 35,
-    blur: 22,
-    maxIntensity: 1.1,
-    weightBy: 'count',
   })
   const [backlogFilters, setBacklogFilters] = useState<BacklogFilters>({
     buckets: DEFAULT_BACKLOG_BUCKETS,
@@ -180,13 +170,6 @@ export default function BikeEventsDashboard() {
             allEvents={events}
             filteredEvents={filteredEvents}
           />
-          {activeDashboard === 'heatmap' && (
-            <HeatmapControls
-              settings={heatmapSettings}
-              onChange={setHeatmapSettings}
-              eventCount={filteredEvents.length}
-            />
-          )}
           {activeDashboard === 'backlog' && (
             <BacklogFiltersPanel
               filters={backlogFilters}
@@ -208,8 +191,9 @@ export default function BikeEventsDashboard() {
             <>
               <HeatmapMap
                 events={filteredEvents}
+                onMarkerClick={setSelectedEvent}
               />
-              <HeatmapSummary events={filteredEvents} settings={heatmapSettings} />
+              <HeatmapSummary events={filteredEvents} />
             </>
           )}
 
