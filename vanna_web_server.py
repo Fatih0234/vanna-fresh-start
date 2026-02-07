@@ -1262,6 +1262,9 @@ def create_app(test_mode: bool = False):
             width: 100%;
             height: 100%;
             object-fit: contain;
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
         }
 
         .brand-name {
