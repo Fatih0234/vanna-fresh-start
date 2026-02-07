@@ -1010,25 +1010,22 @@ def create_app(test_mode: bool = False):
 
         .login-brand {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
             justify-content: center;
+            margin: 2px 0 14px;
         }
 
-        .login-brand-name {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--text);
-            letter-spacing: -0.02em;
-            line-height: 1.1;
-        }
-
-        .login-brand-sub {
-            margin-top: 2px;
-            font-size: 12px;
-            color: var(--muted);
-            line-height: 1.1;
+        .login-logo {
+            width: 180px;
+            height: 180px;
+            max-width: 70vw;
+            max-height: 40vh;
+            border-radius: 22px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            object-fit: contain;
+            object-position: center;
+            display: block;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.10);
         }
 
         .login-note {
@@ -1084,10 +1081,6 @@ def create_app(test_mode: bool = False):
             <div class="login-brand">
                 <img class="login-logo" src="/assets/radblick-mark.svg" alt="RadBlick logo"
                      onerror="this.onerror=null; this.src='/assets/concept4-civic_seal.png';" />
-                <div>
-                    <div class="login-brand-name">RadBlick</div>
-                    <div class="login-brand-sub">Bike Insights</div>
-                </div>
             </div>
             <p class="login-note">Sign in to continue</p>
             <div class="error" id="login-error"></div>
@@ -1248,9 +1241,9 @@ def create_app(test_mode: bool = False):
         }
 
         .brand-mark {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
+            width: 56px;
+            height: 56px;
+            border-radius: 18px;
             display: grid;
             place-items: center;
             box-shadow: var(--shadow-sm);
