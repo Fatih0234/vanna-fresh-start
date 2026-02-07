@@ -1013,6 +1013,7 @@ def create_app(test_mode: bool = False):
             align-items: center;
             gap: 12px;
             margin-bottom: 10px;
+            justify-content: center;
         }
 
         .login-brand-name {
@@ -1034,6 +1035,7 @@ def create_app(test_mode: bool = False):
             margin: 0 0 16px 0;
             color: var(--muted);
             font-size: 13px;
+            text-align: center;
         }
         .login-card input {
             width: 100%;
@@ -1265,6 +1267,7 @@ def create_app(test_mode: bool = False):
             display: block;
             max-width: 100%;
             max-height: 100%;
+            object-position: center;
         }
 
         .brand-name {
