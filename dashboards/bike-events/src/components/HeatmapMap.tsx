@@ -23,8 +23,9 @@ const HEATMAP_GRADIENT = {
   0.9: '#ef4444',
 }
 
-const DEFAULT_RADIUS = 28
-const DEFAULT_BLUR = 20
+// Tuned defaults for "corridor-level vs neighborhood density" without any UI controls.
+const DEFAULT_RADIUS = 35
+const DEFAULT_BLUR = 22
 const HOTSPOT_CELL_METERS = 250
 
 // Category color mapping (matching the vintage theme used elsewhere).
@@ -66,7 +67,12 @@ export default function HeatmapMap({ events, onMarkerClick }: HeatmapMapProps) {
     const grid = buildHeatmapGrid(filteredEvents, HOTSPOT_CELL_METERS)
     const counts = grid.map((cell) => cell.count)
     const p95 = percentileCount(counts, 0.95)
-    return clamp(p95 || 3, 3, 50)
+    // leaflet.heat normalizes each point's weight by `max`.
+    // Our weights are always 1 (event count). If `max` is too large (e.g. 20-50),
+    // individual points become too "cool" and the map looks uniformly blue/green.
+    // Map grid-count p95 into a small, heat-friendly range near 1.
+    const scaled = (p95 || 1) / 3
+    return clamp(scaled, 0.8, 1.4)
   }, [filteredEvents])
 
   const createClusterIcon = (event: BikeEvent) => {
