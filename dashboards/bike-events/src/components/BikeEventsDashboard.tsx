@@ -7,10 +7,12 @@ import type {
 import BikeEventsMap from './BikeEventsMap'
 import HeatmapMap from './HeatmapMap'
 import StreetHotspotsMap from './StreetHotspotsMap'
+import DistrictHotspotsMap from './DistrictHotspotsMap'
 import FilterPanel from './FilterPanel'
 import StatsSummary from './StatsSummary'
 import HeatmapSummary from './HeatmapSummary'
 import StreetHotspotsSummary from './StreetHotspotsSummary'
+import DistrictHotspotsSummary from './DistrictHotspotsSummary'
 import DashboardTabs from './DashboardTabs'
 import EventDetailsModal from './EventDetailsModal'
 
@@ -30,6 +32,11 @@ const DASHBOARD_TABS: Array<{ id: DashboardId; label: string; description: strin
     label: 'Street Hotspots',
     description: 'Street-level hotspots sized by event volume and colored by open share.',
   },
+  {
+    id: 'district',
+    label: 'District Hotspots',
+    description: 'District-level hotspots sized by event volume and colored by open share.',
+  },
 ]
 
 export default function BikeEventsDashboard() {
@@ -47,6 +54,8 @@ export default function BikeEventsDashboard() {
   const [selectedEvent, setSelectedEvent] = useState<BikeEvent | null>(null)
   const [selectedStreet, setSelectedStreet] = useState<string | null>(null)
   const [selectedStreetCenter, setSelectedStreetCenter] = useState<{ lat: number; lon: number } | null>(null)
+  const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null)
+  const [selectedDistrictCenter, setSelectedDistrictCenter] = useState<{ lat: number; lon: number } | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -189,6 +198,29 @@ export default function BikeEventsDashboard() {
                 onSelectStreet={(street, center) => {
                   setSelectedStreet(street)
                   setSelectedStreetCenter(center)
+                }}
+                onSelectEvent={setSelectedEvent}
+              />
+            </>
+          )}
+
+          {activeDashboard === 'district' && (
+            <>
+              <DistrictHotspotsMap
+                events={filteredEvents}
+                selectedDistrict={selectedDistrict}
+                selectedCenter={selectedDistrictCenter}
+                onSelectDistrict={(district, center) => {
+                  setSelectedDistrict(district)
+                  setSelectedDistrictCenter(center)
+                }}
+              />
+              <DistrictHotspotsSummary
+                events={filteredEvents}
+                selectedDistrict={selectedDistrict}
+                onSelectDistrict={(district, center) => {
+                  setSelectedDistrict(district)
+                  setSelectedDistrictCenter(center)
                 }}
                 onSelectEvent={setSelectedEvent}
               />
