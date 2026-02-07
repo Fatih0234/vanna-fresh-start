@@ -1015,16 +1015,6 @@ def create_app(test_mode: bool = False):
             margin-bottom: 10px;
         }
 
-        .login-logo {
-            width: 44px;
-            height: 44px;
-            border-radius: 14px;
-            border: 1px solid var(--border);
-            background: #ffffff;
-            object-fit: cover;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-        }
-
         .login-brand-name {
             font-size: 18px;
             font-weight: 800;
@@ -1090,7 +1080,8 @@ def create_app(test_mode: bool = False):
     <div class="login-screen">
         <div class="login-card">
             <div class="login-brand">
-                <img class="login-logo" src="/assets/concept4-civic_seal.png" alt="RadBlick logo" />
+                <img class="login-logo" src="/assets/radblick-mark.svg" alt="RadBlick logo"
+                     onerror="this.onerror=null; this.src='/assets/concept4-civic_seal.png';" />
                 <div>
                     <div class="login-brand-name">RadBlick</div>
                     <div class="login-brand-sub">Bike Insights</div>
@@ -1255,21 +1246,22 @@ def create_app(test_mode: bool = False):
         }
 
         .brand-mark {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
             display: grid;
             place-items: center;
             box-shadow: var(--shadow-sm);
             background: #fff;
             border: 1px solid var(--border);
             overflow: hidden;
+            padding: 4px;
         }
 
         .brand-mark img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         .brand-name {
@@ -1836,7 +1828,7 @@ def create_app(test_mode: bool = False):
 	        <div id="logged-in" class="shell">
 	            <aside class="sidebar">
 	                    <div class="sidebar-brand">
-	                    <div class="brand-mark"><img src="/assets/concept4-civic_seal.png" alt="RadBlick logo" /></div>
+	                    <div class="brand-mark"><img src="/assets/radblick-mark.svg" alt="RadBlick logo" onerror="this.onerror=null; this.src='/assets/concept4-civic_seal.png';" /></div>
 	                    <div>
 	                        <div class="brand-name">RadBlick</div>
 	                        <div class="brand-subtitle">Bike Insights</div>
