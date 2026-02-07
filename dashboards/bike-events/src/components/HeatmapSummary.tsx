@@ -59,19 +59,37 @@ export default function HeatmapSummary({ events }: HeatmapSummaryProps) {
     return { total, open, closed, topDistricts, topCategories }
   }, [events])
 
+  const openPercentage = stats.total ? ((stats.open / stats.total) * 100).toFixed(1) : 0
+  const closedPercentage = stats.total ? ((stats.closed / stats.total) * 100).toFixed(1) : 0
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          Events in view
-        </div>
-        <div className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">
-          {stats.total}
-        </div>
-        <div className="mt-4 text-sm text-gray-600 dark:text-gray-300">
-          Open: <span className="font-semibold text-emerald-500">{stats.open}</span>
-          <span className="mx-2">|</span>
-          Closed: <span className="font-semibold text-red-500">{stats.closed}</span>
+      {/* Copy of the "Overview" stats card used in the Clustered Overview tab. */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">Overview</h3>
+        <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</div>
+        <p className="text-xs text-gray-500 dark:text-gray-400">Total Events</p>
+
+        <div className="space-y-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600 dark:text-gray-400">Open</span>
+            <span className="font-semibold text-green-600 dark:text-green-400">
+              {stats.open} ({openPercentage}%)
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-green-500 h-2 rounded-full" style={{ width: `${openPercentage}%` }} />
+          </div>
+
+          <div className="flex justify-between text-sm mt-3">
+            <span className="text-gray-600 dark:text-gray-400">Closed</span>
+            <span className="font-semibold text-red-600 dark:text-red-400">
+              {stats.closed} ({closedPercentage}%)
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-red-500 h-2 rounded-full" style={{ width: `${closedPercentage}%` }} />
+          </div>
         </div>
       </div>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
