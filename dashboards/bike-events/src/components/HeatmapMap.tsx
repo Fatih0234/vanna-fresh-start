@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { MapContainer, TileLayer } from 'react-leaflet'
+import { useEffect, useMemo } from 'react'
+import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import type { LatLngExpression } from 'leaflet'
 import type { BikeEvent } from '@/types/bikeEvents'
 import HeatmapLayer from './HeatmapLayer'
@@ -26,10 +26,27 @@ const DEFAULT_BLUR = 20
 const HOTSPOT_CELL_METERS = 250
 const HOTSPOT_ZOOM = 15
 
+function MapApiBridge({
+  onReady,
+}: {
+  onReady?: (api: { panTo: (center: { lat: number; lon: number }, zoom?: number) => void }) => void
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    if (!onReady) return
+    onReady({
+      panTo: (center, zoom = HOTSPOT_ZOOM) => {
+        map.setView([center.lat, center.lon], zoom, { animate: true })
+      },
+    })
+  }, [map, onReady])
+
+  return null
+}
+
 export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
   const cologneCenter: LatLngExpression = [50.9375, 6.9603]
-  const mapRef = useRef<L.Map | null>(null)
-  const [mapReady, setMapReady] = useState(false)
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as any)._getIconUrl
@@ -57,18 +74,6 @@ export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
     return clamp(p95 || 3, 3, 50)
   }, [filteredEvents])
 
-  useEffect(() => {
-    if (!onReady) return
-    if (!mapReady) return
-    if (!mapRef.current) return
-
-    onReady({
-      panTo: (center, zoom = HOTSPOT_ZOOM) => {
-        mapRef.current?.setView([center.lat, center.lon], zoom, { animate: true })
-      },
-    })
-  }, [onReady, mapReady])
-
   return (
     <div className="relative h-[420px] md:h-[620px] w-full rounded-lg overflow-hidden shadow-lg">
       <MapContainer
@@ -78,15 +83,13 @@ export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
         maxZoom={18}
         className="h-full w-full"
         scrollWheelZoom={true}
-        whenReady={() => setMapReady(true)}
-        whenCreated={(map) => {
-          mapRef.current = map
-        }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        <MapApiBridge onReady={onReady} />
 
         {heatPoints.length > 0 && (
           <HeatmapLayer

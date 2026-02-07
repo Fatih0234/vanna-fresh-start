@@ -208,8 +208,6 @@ export default function BikeEventsDashboard() {
             <>
               <HeatmapMap
                 events={filteredEvents}
-                onMarkerClick={setSelectedEvent}
-                settings={heatmapSettings}
               />
               <HeatmapSummary events={filteredEvents} settings={heatmapSettings} />
             </>
