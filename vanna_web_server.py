@@ -1,5 +1,5 @@
 """
-Vanna AI Web Server with Chat Interface
+RadBlick Web Server with Chat Interface
 
 This script sets up a FastAPI web server with Vanna's built-in chat UI.
 Access the chat interface at http://localhost:8000
@@ -531,7 +531,7 @@ def create_app(test_mode: bool = False):
 
     if test_mode:
         app = FastAPI(
-            title="Vanna AI Events Explorer (test)",
+            title="RadBlick Bike Insights (test)",
             description="Test-mode FastAPI app (skips env validation and LLM init).",
             version="test",
         )
@@ -713,7 +713,7 @@ def create_app(test_mode: bool = False):
 
     # Create FastAPI app
     app = FastAPI(
-        title="Vanna AI Events Explorer",
+        title="RadBlick Bike Insights",
         description="Natural language interface to query the public.v_bike_events view",
         version="1.0.0",
     )
@@ -738,6 +738,11 @@ def create_app(test_mode: bool = False):
         app.mount(
             "/dashboards", StaticFiles(directory=dashboard_dist), name="dashboards"
         )
+
+    # Mount app assets (brand logo, etc.)
+    assets_dir = os.path.join(os.path.dirname(__file__), "app_assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     # ── Auth middleware: protect Vanna chat endpoints ──
     @app.middleware("http")
@@ -957,7 +962,7 @@ def create_app(test_mode: bool = False):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vanna AI - Sign In</title>
+    <title>RadBlick - Sign In</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1001,6 +1006,44 @@ def create_app(test_mode: bool = False):
             font-size: 14px;
             color: var(--muted);
             margin-bottom: 18px;
+        }
+
+        .login-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .login-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: #ffffff;
+            object-fit: cover;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+        }
+
+        .login-brand-name {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .login-brand-sub {
+            margin-top: 2px;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.1;
+        }
+
+        .login-note {
+            margin: 0 0 16px 0;
+            color: var(--muted);
+            font-size: 13px;
         }
         .login-card input {
             width: 100%;
@@ -1046,8 +1089,14 @@ def create_app(test_mode: bool = False):
 <body>
     <div class="login-screen">
         <div class="login-card">
-            <h2>Welcome to Vanna</h2>
-            <p>Please log in to continue</p>
+            <div class="login-brand">
+                <img class="login-logo" src="/assets/concept4-civic_seal.png" alt="RadBlick logo" />
+                <div>
+                    <div class="login-brand-name">RadBlick</div>
+                    <div class="login-brand-sub">Bike Insights</div>
+                </div>
+            </div>
+            <p class="login-note">Sign in to continue</p>
             <div class="error" id="login-error"></div>
             <input type="email" id="login-email" placeholder="Email" autocomplete="email">
             <input type="password" id="login-password" placeholder="Password" autocomplete="current-password">
@@ -1107,7 +1156,7 @@ def create_app(test_mode: bool = False):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vanna AI - Events Explorer</title>
+    <title>RadBlick - Bike Insights</title>
     __COMPONENT_SCRIPT__
     <link
         rel="stylesheet"
@@ -1209,12 +1258,18 @@ def create_app(test_mode: bool = False):
             width: 40px;
             height: 40px;
             border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb, #1e40af);
-            color: #fff;
-            font-weight: 700;
             display: grid;
             place-items: center;
             box-shadow: var(--shadow-sm);
+            background: #fff;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .brand-mark img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .brand-name {
@@ -1235,9 +1290,26 @@ def create_app(test_mode: bool = False):
             color: var(--muted);
         }
 
-        .sidebar-actions {
-            display: flex;
-            gap: 8px;
+        .chat-actions {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            padding: 8px 4px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .chat-actions-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            padding: 4px 4px 0;
+        }
+
+        .chat-actions .btn {
+            width: 100%;
+            border-radius: 12px;
         }
 
         .sidebar-tabs {
@@ -1759,47 +1831,48 @@ def create_app(test_mode: bool = False):
         }
     </style>
 </head>
-<body>
-    <div class="app">
-        <div id="logged-in" class="shell">
-            <aside class="sidebar">
-                <div class="sidebar-brand">
-                    <div class="brand-mark">V</div>
-                    <div>
-                        <div class="brand-name">Vanna</div>
-                        <div class="brand-subtitle">Events Explorer</div>
-                    </div>
-                </div>
-                <div class="sidebar-title">Workspace</div>
-                <div class="sidebar-actions">
-                    <button class="btn ghost" id="sidebar-new-chat">New chat</button>
-                </div>
-                <div class="sidebar-tabs">
-                    <button class="sidebar-tab active" id="tab-home" type="button">Home</button>
-                    <button class="sidebar-tab" id="tab-chats" type="button">Chats</button>
-                    <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
-                </div>
-                <div class="sidebar-list" id="home-list">
-                    <div class="home-sidebar-note">
-                        Weekly highlights for Cologne bike-related reports.
-                        <br><br>
-                        Use the tabs to jump into Chats or the Bike Events dashboard.
-                    </div>
-                </div>
-                <div class="sidebar-list" id="conv-list" style="display: none;"></div>
-                <div class="sidebar-list" id="dashboard-list" style="display: none;">
-                    <div class="dashboard-card" data-dashboard="bike-events">
-                        <div class="dashboard-icon">🚴</div>
-                        <div class="dashboard-info">
-                            <div class="dashboard-name">Bike Events</div>
-                            <div class="dashboard-desc">Cologne infrastructure issues</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="sidebar-footer">
-                    <button class="btn primary" id="logout-btn">Log out</button>
-                </div>
-            </aside>
+	<body>
+	    <div class="app">
+	        <div id="logged-in" class="shell">
+	            <aside class="sidebar">
+	                    <div class="sidebar-brand">
+	                    <div class="brand-mark"><img src="/assets/concept4-civic_seal.png" alt="RadBlick logo" /></div>
+	                    <div>
+	                        <div class="brand-name">RadBlick</div>
+	                        <div class="brand-subtitle">Bike Insights</div>
+	                    </div>
+	                </div>
+	                <div class="sidebar-title">Workspace</div>
+	                <div class="sidebar-tabs">
+	                    <button class="sidebar-tab active" id="tab-home" type="button">Home</button>
+	                    <button class="sidebar-tab" id="tab-chats" type="button">Chats</button>
+	                    <button class="sidebar-tab" id="tab-dashboards" type="button">Dashboards</button>
+	                </div>
+	                <div class="sidebar-list" id="home-list">
+	                    <div class="home-sidebar-note">
+	                        Weekly highlights for Cologne bike-related reports.
+	                        <br><br>
+	                        Use the tabs to jump into Chats or the Bike Events dashboard.
+	                    </div>
+	                </div>
+	                <div class="chat-actions" id="chat-actions">
+	                    <div class="chat-actions-title">Chats</div>
+	                    <button class="btn primary" id="sidebar-new-chat" type="button">New chat</button>
+	                </div>
+	                <div class="sidebar-list" id="conv-list" style="display: none;"></div>
+	                <div class="sidebar-list" id="dashboard-list" style="display: none;">
+	                    <div class="dashboard-card" data-dashboard="bike-events">
+	                        <div class="dashboard-icon">🚴</div>
+	                        <div class="dashboard-info">
+	                            <div class="dashboard-name">Bike Events</div>
+	                            <div class="dashboard-desc">Cologne infrastructure issues</div>
+	                        </div>
+	                    </div>
+	                </div>
+	                <div class="sidebar-footer">
+	                    <button class="btn primary" id="logout-btn">Log out</button>
+	                </div>
+	            </aside>
 
             <main class="main" id="main">
                 <div id="chat-wrapper" class="chat-wrapper"></div>
@@ -1821,47 +1894,52 @@ def create_app(test_mode: bool = False):
     let homeAbort = null;
     let homeModalHost = null;
     let homeModalEscHandler = null;
-    let bikeEventsCssText = null;
+	    let bikeEventsCssText = null;
 
-    const elLoggedIn = document.getElementById('logged-in');
-    const elMain = document.getElementById('main');
-    const elHomeList = document.getElementById('home-list');
-    const elConvList = document.getElementById('conv-list');
-    const elDashboardList = document.getElementById('dashboard-list');
-    const elTabHome = document.getElementById('tab-home');
-    const elTabChats = document.getElementById('tab-chats');
-    const elTabDashboards = document.getElementById('tab-dashboards');
+	    const elLoggedIn = document.getElementById('logged-in');
+	    const elMain = document.getElementById('main');
+	    const elHomeList = document.getElementById('home-list');
+	    const elConvList = document.getElementById('conv-list');
+	    const elDashboardList = document.getElementById('dashboard-list');
+	    const elChatActions = document.getElementById('chat-actions');
+	    const elTabHome = document.getElementById('tab-home');
+	    const elTabChats = document.getElementById('tab-chats');
+	    const elTabDashboards = document.getElementById('tab-dashboards');
 
-    function setLoggedIn() {
-        elLoggedIn.classList.add('active');
-    }
+	    function setLoggedIn() {
+	        elLoggedIn.classList.add('active');
+	    }
 
-    function setTab(tab) {
-        if (tab === 'home') {
-            elTabHome.classList.add('active');
-            elTabChats.classList.remove('active');
-            elTabDashboards.classList.remove('active');
-            elHomeList.style.display = 'flex';
-            elDashboardList.style.display = 'none';
-            elConvList.style.display = 'none';
-        } else if (tab === 'dashboards') {
-            elTabHome.classList.remove('active');
-            elTabDashboards.classList.add('active');
-            elTabChats.classList.remove('active');
-            elTabHome.classList.remove('active');
-            elDashboardList.style.display = 'flex';
-            elConvList.style.display = 'none';
-            elHomeList.style.display = 'none';
-        } else {
-            elTabHome.classList.remove('active');
-            elTabChats.classList.add('active');
-            elTabDashboards.classList.remove('active');
-            elTabHome.classList.remove('active');
-            elConvList.style.display = 'flex';
-            elDashboardList.style.display = 'none';
-            elHomeList.style.display = 'none';
-        }
-    }
+	    function setTab(tab) {
+	        // Chats-specific controls should only appear within the Chats section.
+	        if (elChatActions) {
+	            elChatActions.style.display = tab === 'chats' ? 'flex' : 'none';
+	        }
+	        if (tab === 'home') {
+	            elTabHome.classList.add('active');
+	            elTabChats.classList.remove('active');
+	            elTabDashboards.classList.remove('active');
+	            elHomeList.style.display = 'flex';
+	            elDashboardList.style.display = 'none';
+	            elConvList.style.display = 'none';
+	        } else if (tab === 'dashboards') {
+	            elTabHome.classList.remove('active');
+	            elTabDashboards.classList.add('active');
+	            elTabChats.classList.remove('active');
+	            elTabHome.classList.remove('active');
+	            elDashboardList.style.display = 'flex';
+	            elConvList.style.display = 'none';
+	            elHomeList.style.display = 'none';
+	        } else {
+	            elTabHome.classList.remove('active');
+	            elTabChats.classList.add('active');
+	            elTabDashboards.classList.remove('active');
+	            elTabHome.classList.remove('active');
+	            elConvList.style.display = 'flex';
+	            elDashboardList.style.display = 'none';
+	            elHomeList.style.display = 'none';
+	        }
+	    }
 
     function stopChatPolling() {
         if (chatPollTimer) clearInterval(chatPollTimer);
@@ -2200,7 +2278,7 @@ def create_app(test_mode: bool = False):
             chatEl.windowed = false;
             chatEl.allowMinimize = false;
             chatEl.showProgress = false;
-            chatEl.title = 'Vanna';
+            chatEl.title = 'RadBlick';
             chatEl.subtitle = '';
             chatEl.placeholder = 'Ask a question...';
             chatEl.starterPrompts = [
@@ -2644,7 +2722,7 @@ def create_app(test_mode: bool = False):
         return html_with_components.replace("</head>", schema_injection + "</head>")
 
     print("\n" + "=" * 60)
-    print("Vanna AI Web Server is ready!")
+    print("RadBlick Web Server is ready!")
     print("=" * 60)
     print("\nOpen your browser and go to:")
     print("   http://localhost:8000")

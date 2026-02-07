@@ -18,13 +18,6 @@ export default function EventDetailsModal({ event, onClose }: EventDetailsModalP
     : null
   const eventUrl = `https://sags-uns.stadt-koeln.de/requests/${event.sequence_number}-${event.year}`
 
-  const getConfidenceColor = (confidence: number | null) => {
-    if (!confidence) return 'bg-gray-300'
-    if (confidence > 0.8) return 'bg-green-500'
-    if (confidence > 0.6) return 'bg-yellow-500'
-    return 'bg-red-500'
-  }
-
   return (
     <Transition show={true} as={Fragment}>
       <Dialog onClose={onClose} className="relative z-[9999]">
@@ -120,12 +113,6 @@ export default function EventDetailsModal({ event, onClose }: EventDetailsModalP
                     {event.status}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                    Backlog
-                  </p>
-                  <p className="text-sm text-gray-900 dark:text-gray-100">{event.backlog_bucket}</p>
-                </div>
               </div>
 
               {/* Description */}
@@ -155,51 +142,6 @@ export default function EventDetailsModal({ event, onClose }: EventDetailsModalP
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">{event.cat_path}</p>
               </div>
-
-              {/* Confidence Scores */}
-              {(event.bike_confidence || event.bike_issue_confidence) && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    Confidence Scores
-                  </h3>
-                  {event.bike_confidence && (
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Bike Relation Confidence
-                        </span>
-                        <span className="text-gray-900 dark:text-gray-100">
-                          {(event.bike_confidence * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${getConfidenceColor(event.bike_confidence)}`}
-                          style={{ width: `${event.bike_confidence * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {event.bike_issue_confidence && (
-                    <div>
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-600 dark:text-gray-400">
-                          Issue Category Confidence
-                        </span>
-                        <span className="text-gray-900 dark:text-gray-100">
-                          {(event.bike_issue_confidence * 100).toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full ${getConfidenceColor(event.bike_issue_confidence)}`}
-                          style={{ width: `${event.bike_issue_confidence * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               {/* Actions */}
               <div className="flex space-x-3">

@@ -32,7 +32,7 @@ export interface BikeEvent {
   bike_issue_emoji: string
 }
 
-export type DashboardId = 'overview' | 'heatmap' | 'backlog'
+export type DashboardId = 'overview' | 'heatmap' | 'backlog' | 'district'
 
 export interface FilterState {
   dateRange: {
