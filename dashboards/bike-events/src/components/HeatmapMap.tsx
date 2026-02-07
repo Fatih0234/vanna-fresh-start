@@ -1,17 +1,19 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
-import { MapContainer, TileLayer, useMap } from 'react-leaflet'
-import type { LatLngExpression } from 'leaflet'
+import { MapContainer, TileLayer, Marker, Tooltip } from 'react-leaflet'
+import MarkerClusterGroup from 'react-leaflet-cluster'
+import { divIcon, type LatLngExpression } from 'leaflet'
 import type { BikeEvent } from '@/types/bikeEvents'
 import HeatmapLayer from './HeatmapLayer'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { buildHeatmapGrid, clamp, percentileCount } from '@/utils/heatmapGrid'
+import { CategoryIcon, getCategoryIconMarkup } from '@/utils/categoryIcons'
 
 interface HeatmapMapProps {
   events: BikeEvent[]
-  onReady?: (api: { panTo: (center: { lat: number; lon: number }, zoom?: number) => void }) => void
+  onMarkerClick?: (event: BikeEvent) => void
 }
 
 const HEATMAP_GRADIENT = {
@@ -24,28 +26,21 @@ const HEATMAP_GRADIENT = {
 const DEFAULT_RADIUS = 28
 const DEFAULT_BLUR = 20
 const HOTSPOT_CELL_METERS = 250
-const HOTSPOT_ZOOM = 15
 
-function MapApiBridge({
-  onReady,
-}: {
-  onReady?: (api: { panTo: (center: { lat: number; lon: number }, zoom?: number) => void }) => void
-}) {
-  const map = useMap()
-
-  useEffect(() => {
-    if (!onReady) return
-    onReady({
-      panTo: (center, zoom = HOTSPOT_ZOOM) => {
-        map.setView([center.lat, center.lon], zoom, { animate: true })
-      },
-    })
-  }, [map, onReady])
-
-  return null
+// Category color mapping (matching the vintage theme used elsewhere).
+const CATEGORY_COLORS: Record<string, string> = {
+  'Oberflächenqualität / Schäden': '#8b5a2b',
+  'Hindernisse & Blockaden (inkl. Parken & Baustelle)': '#d97706',
+  'Müll / Scherben / Splitter (Sharp objects & debris)': '#65a30d',
+  'Markierungen & Beschilderung': '#dc2626',
+  'Ampeln & Signale (inkl. bike-specific Licht)': '#2563eb',
+  'Sicherheit & Komfort (Geometrie/Führung)': '#7c3aed',
+  'Vegetation & Sichtbehinderung': '#059669',
+  'Wasser / Eis / Entwässerung': '#0891b2',
+  'Other / Unklar': '#6b7280',
 }
 
-export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
+export default function HeatmapMap({ events, onMarkerClick }: HeatmapMapProps) {
   const cologneCenter: LatLngExpression = [50.9375, 6.9603]
 
   useEffect(() => {
@@ -74,6 +69,23 @@ export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
     return clamp(p95 || 3, 3, 50)
   }, [filteredEvents])
 
+  const createClusterIcon = (event: BikeEvent) => {
+    const color = CATEGORY_COLORS[event.bike_issue_category] || CATEGORY_COLORS['Other / Unklar']
+    const borderColor = event.status === 'open' ? '#22c55e' : '#ef4444'
+
+    return divIcon({
+      html: `
+        <div class="custom-marker" style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid ${borderColor}; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
+          ${getCategoryIconMarkup(event.bike_issue_category, 'w-4 h-4 text-white')}
+        </div>
+      `,
+      className: '',
+      iconSize: [30, 30],
+      iconAnchor: [15, 30],
+      popupAnchor: [0, -30],
+    })
+  }
+
   return (
     <div className="relative h-[420px] md:h-[620px] w-full rounded-lg overflow-hidden shadow-lg">
       <MapContainer
@@ -89,8 +101,6 @@ export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <MapApiBridge onReady={onReady} />
-
         {heatPoints.length > 0 && (
           <HeatmapLayer
             points={heatPoints}
@@ -100,6 +110,37 @@ export default function HeatmapMap({ events, onReady }: HeatmapMapProps) {
             gradient={HEATMAP_GRADIENT}
           />
         )}
+
+        <MarkerClusterGroup chunkedLoading maxClusterRadius={55} showCoverageOnHover={false}>
+          {filteredEvents.map((event) => (
+            <Marker
+              key={event.service_request_id}
+              position={[event.lat, event.lon]}
+              icon={createClusterIcon(event)}
+              eventHandlers={{
+                click: () => onMarkerClick?.(event),
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -18]} opacity={0.95}>
+                <div className="text-sm max-w-xs">
+                  <div className="font-semibold mb-1 flex items-center gap-2">
+                    <CategoryIcon category={event.bike_issue_category} className="w-4 h-4" />
+                    <span>{event.title}</span>
+                  </div>
+                  {event.description && (
+                    <div className="text-xs text-gray-600 dark:text-gray-300 mb-1">
+                      {event.description.slice(0, 150)}
+                      {event.description.length > 150 ? '...' : ''}
+                    </div>
+                  )}
+                  <div className="text-xs text-gray-500 dark:text-gray-400 italic">
+                    Click for full details
+                  </div>
+                </div>
+              </Tooltip>
+            </Marker>
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
 
       {/* On-map density legend overlay (no scrolling). */}
