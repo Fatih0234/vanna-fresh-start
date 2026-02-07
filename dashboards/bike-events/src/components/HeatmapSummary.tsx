@@ -96,15 +96,16 @@ export default function HeatmapSummary({ events }: HeatmapSummaryProps) {
         <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Top districts
         </div>
-        <div className="mt-3 h-[170px] w-full">
+        <div className="mt-3 h-[210px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.topDistricts} layout="vertical" margin={{ left: 0, right: 8 }}>
               <XAxis type="number" hide />
               <YAxis
                 type="category"
                 dataKey="name"
-                width={90}
+                width={110}
                 tick={{ fontSize: 11 }}
+                interval={0}
               />
               <Tooltip
                 contentStyle={{
@@ -117,7 +118,7 @@ export default function HeatmapSummary({ events }: HeatmapSummaryProps) {
                   props.payload.fullName || props.payload.name,
                 ]}
               />
-              <Bar dataKey="count" fill={COLORS.primary} radius={[4, 4, 4, 4]} />
+              <Bar dataKey="count" fill={COLORS.primary} radius={[4, 4, 4, 4]} barSize={14} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -126,15 +127,16 @@ export default function HeatmapSummary({ events }: HeatmapSummaryProps) {
         <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
           Top issue categories
         </div>
-        <div className="mt-3 h-[170px] w-full">
+        <div className="mt-3 h-[210px] w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.topCategories} layout="vertical" margin={{ left: 0, right: 8 }}>
               <XAxis type="number" hide />
               <YAxis
                 type="category"
                 dataKey="name"
-                width={100}
+                width={140}
                 tick={{ fontSize: 11 }}
+                interval={0}
               />
               <Tooltip
                 contentStyle={{
@@ -147,7 +149,7 @@ export default function HeatmapSummary({ events }: HeatmapSummaryProps) {
                   props.payload.fullName || props.payload.name,
                 ]}
               />
-              <Bar dataKey="count" fill={COLORS.secondary} radius={[4, 4, 4, 4]} />
+              <Bar dataKey="count" fill={COLORS.secondary} radius={[4, 4, 4, 4]} barSize={14} />
             </BarChart>
           </ResponsiveContainer>
         </div>
